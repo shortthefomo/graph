@@ -24,6 +24,8 @@ import decimal from 'decimal.js'
 import ForceGraph3D from '3d-force-graph'
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js'
 import { GlitchPass } from 'three/examples/jsm/postprocessing/GlitchPass.js'
+import { CSS2DRenderer, CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRenderer.js'
+
 
 const glitchPass = new GlitchPass(64)
 const bloomPass = new UnrealBloomPass()
@@ -59,13 +61,26 @@ export default {
         this.$store.dispatch('clientConnect',  { network: this.network, force: false })
         await this.connect()
 
-        this.graph = ForceGraph3D({alpha: true,
-        powerPreference: 'high-performance',
-        antialias: false})
+        this.graph = ForceGraph3D({
+            alpha: true,
+            powerPreference: 'high-performance',
+            antialias: false
+        })
         (document.getElementById('3d-graph'))
             .backgroundColor('rgba(0,0,0,0)')
             .graphData({nodes: this.nodes, links: this.links})
             .nodeLabel('id')
+            .onNodeClick(node => window.open((this.network === 'xrpl') ? `https://livenet.xrpl.org/accounts/${node.id}`:`https://xahau.xrpl.org/accounts/${node.id}`, '_blank'))
+            // .nodeThreeObject(node => {
+            //     const nodeEl = document.createElement('span')
+            //     nodeEl.textContent = node.id
+            //     nodeEl.style.color = node.color
+            //     nodeEl.className = 'node-label'
+            //     return new CSS2DObject(nodeEl)
+            // })
+
+            // .linkDirectionalParticles('value')
+            // .linkDirectionalParticleSpeed(d => d.value * 0.001)
         
         this.graph.postProcessingComposer().addPass(bloomPass)
         // this.graph.postProcessingComposer().addPass(glitchPass)
@@ -98,26 +113,29 @@ export default {
 
             this.$store.dispatch('clientConnect',  { network: this.network, force: false })
             await this.connect()
-
-            const client = this.$store.getters.getClient(this.network)
-            console.log(await client.send({'command': 'server_info'}))
         },
         async connect() {
-            const nodes = import.meta.env.VITE_APP_XAH_WSS.split(', ')
-            this.$store.dispatch('setClientNodes', { network: 'xahau', nodes: nodes })
-            // const nodes = import.meta.env.VITE_APP_XRPL_WSS.split(', ')
-            // this.$store.dispatch('setClientNodes', { network: 'xrpl', nodes: nodes })
-
+            let nodes
+            if (this.network ==='xrpl') {
+                nodes = import.meta.env.VITE_APP_XRPL_WSS.split(', ')
+                this.$store.dispatch('setClientNodes', { network: 'xrpl', nodes: nodes })
+            }
+            else {
+                nodes = import.meta.env.VITE_APP_XAH_WSS.split(', ')
+                this.$store.dispatch('setClientNodes', { network: 'xahau', nodes: nodes })
+            }
+            
 
             console.log('connect ' + this.network)
             this.$store.dispatch('clearBooks', this.network)
             this.$store.dispatch('clientConnect', { network: this.network, force: false })
 
             const xrpl = this.$store.getters.getClient(this.network)
-            this.ledgerClose()
+            await this.ledgerClose()
         },
-        ledgerClose() {
+        async ledgerClose() {
             const client = this.$store.getters.getClient(this.network)
+            console.log(await client.send({'command': 'server_info'}))
             const callback = async (event) => {
                 // this.accounts = {}
                 // this.nodes = []
