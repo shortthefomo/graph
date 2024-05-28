@@ -16,8 +16,11 @@
             </select>
         </div>
     </div>
-    <div class="row"><div class="col text-center"><h1>{{ ledger }}</h1></div></div>
+    <div class="row"><div class="col text-center"><h1>{{ ledger }}</h1><small class="text-white">accounts renderered: {{ Object.keys(this.accounts).length }}</small> <small class="text-white">ledgers: {{ ledgers }}</small></div></div>
     <div id="3d-graph"></div>
+    <div class="text-white">
+        <p>spamm accounts removed: {{ ignored.join(', ') }}</p>
+    </div>
 </template>
 
 <script>
@@ -52,7 +55,12 @@ export default {
             accounts: {},
             loaded: false,
             nodes: [],
-            links: []
+            links: [],
+            ledgers: 0,
+            ignored: [
+                'rHktfGUbjqzU4GsYCMc1pDjdHXb5CJamto',
+                'rxRpSNb1VktvzBz8JF2oJC6qaww6RZ7Lw'
+            ] // remove spam from the render, if wanted.
         }
     },
     computed: {
@@ -65,7 +73,7 @@ export default {
         await this.connect()
 
         this.graph = ForceGraph3D({
-            controlType: 'orbit'
+            controlType: 'trackball'
         })
         // this.graph.renderer({
         //     alpha: true,
@@ -75,7 +83,9 @@ export default {
             .backgroundColor('rgba(0,0,0,0)')
             .graphData({nodes: this.nodes, links: this.links})
             .nodeLabel('id')
+            // .enablePointerInteraction(false)
             .onNodeClick(node => window.open((this.network === 'xrpl') ? `https://livenet.xrpl.org/accounts/${node.id}`:`https://xahau.xrpl.org/accounts/${node.id}`, '_blank'))
+            
         ///add arrows but slowwww
             // .linkDirectionalArrowLength(3.5)
             // .linkDirectionalArrowRelPos(1)
@@ -187,8 +197,9 @@ export default {
                     nodes: this.nodes,
                     links: this.links
                 })
-                // console.log(this.accounts)
+                // console.log('accounts', Object.keys(this.accounts).length)
                 // this.graph.pauseAnimation()
+                this.ledgers++
             }
 
             this.client.on('ledger', callback)
@@ -215,7 +226,9 @@ export default {
         },
         graphData(data, type = undefined) {
             for (let index = 0; index < data.accountBalanceChanges.length; index++) {
+                
                 const element = data.accountBalanceChanges[index]
+                if (this.ignored.includes(element.account)) { continue }
                 const group = type !== undefined ? type: element.isAMM ? 'amm': element.isOffer ? 'dex' : element.isDirect? 'direct' : 'rippling'
                 const color = type !== undefined ? '#00e56a': element.isAMM ? '#FF1A8B': element.isOffer ? '#00e56a' : element.isDirect? '#974CFF' : '#FFFFFF'
                 if (this.accounts[element.account] === undefined) {
