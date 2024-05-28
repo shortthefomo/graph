@@ -20,6 +20,12 @@
             </div>
         </div>
         <div class="input-group mb-2">
+            <div class="form-check form-switch">
+                <input v-model="interaction" v-on:click="handleChangeInteraction" class="form-check-input" type="checkbox" role="switch" id="flexInteractionmSwitch" checked>
+                <label class="form-check-label text-white" for="flexInteractionSwitch">Click Nodes (performance degrades)</label>
+            </div>
+        </div>
+        <div class="input-group mb-2">
             <span class="input-group-text">Network</span>
             <select v-model="network" v-on:change="handleChangeNetwork($event)">
                 <option v-for="(option, name, index) in networks" :value="option.value" :key="index">
@@ -62,6 +68,7 @@ export default {
             dimentions: true,
             bloom_show: true,
             animation: true,
+            interaction: false,
             networks: [
                 {label: 'xrpl', value: 'xrpl'},
                 {label: 'xahau', value: 'xahau'}
@@ -158,6 +165,16 @@ export default {
                 nodes: this.nodes,
                 links: this.links
             })
+        },
+        handleChangeInteraction() {
+            console.log('handleChangeInteraction', !this.interaction)
+            this.graph.enablePointerInteraction(!this.interaction)
+            if (!this.interaction) {
+                this.graph.onNodeClick(node => window.open((this.network === 'xrpl') ? `https://livenet.xrpl.org/accounts/${node.id}`:`https://xahau.xrpl.org/accounts/${node.id}`, '_blank'))
+            }
+            else {
+                this.graph.onNodeClick()
+            }
         },
         handleChangeAnimation() {
             (this.animation) ? this.graph.pauseAnimation() : this.graph.resumeAnimation()
