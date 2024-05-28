@@ -212,12 +212,25 @@ export default {
                         account: element.account
                     }
 
-                    this.nodes.push({ id: element.account, group, color })
+                    this.nodes.push({ id: element.account, group, color  })
                 }
+                else {
+                    // update colors to the latest other wise.
+                    for (let index = 0; index < this.nodes.length; index++) {
+                        const node = this.nodes[index]
+                        if (node.id !== element.account) { continue }
+                        if (node.color !== color && node.group !== 'amm') {
+                            // console.log('color changed', element.account, node.color, color)
+                            node.color = color
+                        }
+                    }
+                }
+
                 if (data.sourceAccount !== element.account) {
                     this.links.push({ source: data.sourceAccount, target: element.account, group })        
                 }
             }
+            
         },
         currencyHexToUTF8(code) {
             if (code.length === 3)
