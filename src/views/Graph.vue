@@ -1,4 +1,5 @@
 <template>
+    
     <div class="d-flex align-content-center flex-wrap justify-content-center">
         <div class="input-group mb-2">
             <div class="form-check form-switch">
@@ -15,12 +16,12 @@
             </select>
         </div>
     </div>
+    <div class="row"><div class="col text-center"><h1>{{ ledger }}</h1></div></div>
     <div id="3d-graph"></div>
 </template>
 
 <script>
 import pathParser from 'xrpl-tx-path-parser'
-import decimal from 'decimal.js'
 import ForceGraph3D from '3d-force-graph'
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js'
 import { GlitchPass } from 'three/examples/jsm/postprocessing/GlitchPass.js'
@@ -46,6 +47,7 @@ export default {
                 {label: 'xrpl', value: 'xrpl'},
                 {label: 'xahau', value: 'xahau'}
             ],
+            ledger: undefined,
             graph: undefined,
             accounts: {},
             loaded: false,
@@ -63,15 +65,23 @@ export default {
         await this.connect()
 
         this.graph = ForceGraph3D({
-            alpha: true,
-            powerPreference: 'high-performance',
-            antialias: false
+            controlType: 'orbit'
         })
+        // this.graph.renderer({
+        //     alpha: true,
+        //     powerPreference: 'high-performance',
+        //     antialias: false})
         (document.getElementById('3d-graph'))
             .backgroundColor('rgba(0,0,0,0)')
             .graphData({nodes: this.nodes, links: this.links})
             .nodeLabel('id')
             .onNodeClick(node => window.open((this.network === 'xrpl') ? `https://livenet.xrpl.org/accounts/${node.id}`:`https://xahau.xrpl.org/accounts/${node.id}`, '_blank'))
+        ///add arrows but slowwww
+            // .linkDirectionalArrowLength(3.5)
+            // .linkDirectionalArrowRelPos(1)
+            // .linkCurvature(0.25)
+
+
             // .nodeThreeObject(node => {
             //     const nodeEl = document.createElement('span')
             //     nodeEl.textContent = node.id
@@ -157,6 +167,7 @@ export default {
                 // console.log('ledger_result', ledger_result)
                 if ('error' in ledger_result) { return }
                 console.log('ledger_index', ledger_result.ledger.ledger_index)
+                this.ledger = ledger_result.ledger.ledger_index
                 if ('ledger' in ledger_result && 'transactions' in ledger_result.ledger) {
                     // console.log('transactions', transactions)
 
