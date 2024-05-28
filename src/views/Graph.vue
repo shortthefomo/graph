@@ -39,6 +39,7 @@ export default {
     },
     data() {
         return {
+            client: undefined,
             network: 'xrpl',
             bloom_show: true,
             networks: [
@@ -115,6 +116,9 @@ export default {
             await this.connect()
         },
         async connect() {
+            if (this.client !== undefined) {
+                this.client.close()
+            }
             let nodes
             if (this.network ==='xrpl') {
                 nodes = import.meta.env.VITE_APP_XRPL_WSS.split(', ')
@@ -134,8 +138,8 @@ export default {
             await this.ledgerClose()
         },
         async ledgerClose() {
-            const client = this.$store.getters.getClient(this.network)
-            console.log(await client.send({'command': 'server_info'}))
+            this.client = this.$store.getters.getClient(this.network)
+            console.log(await this.client.send({'command': 'server_info'}))
             const callback = async (event) => {
                 // this.accounts = {}
                 // this.nodes = []
@@ -149,10 +153,10 @@ export default {
                     'expand': true,
                     'owner_funds': true
                 }
-                const ledger_result = await client.send(request)
+                const ledger_result = await this.client.send(request)
                 // console.log('ledger_result', ledger_result)
                 if ('error' in ledger_result) { return }
-
+                console.log('ledger_index', ledger_result.ledger.ledger_index)
                 if ('ledger' in ledger_result && 'transactions' in ledger_result.ledger) {
                     // console.log('transactions', transactions)
 
@@ -176,7 +180,7 @@ export default {
                 // this.graph.pauseAnimation()
             }
 
-            client.on('ledger', callback)
+            this.client.on('ledger', callback)
         },
         graphOfferCreate(transaction) {
             transaction.meta  = transaction.metaData
