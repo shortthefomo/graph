@@ -3,6 +3,18 @@
     <div class="d-flex align-content-center flex-wrap justify-content-center">
         <div class="input-group mb-2">
             <div class="form-check form-switch">
+                <input v-model="animation" v-on:click="handleChangeAnimation" class="form-check-input" type="checkbox" role="switch" id="flexBloomAnimation" checked>
+                <label class="form-check-label text-white" for="flexBloomAnimation">Animate/Pause</label>
+            </div>
+        </div>
+        <div class="input-group mb-2">
+            <div class="form-check form-switch">
+                <input v-model="dimentions" v-on:click="handleChangDimentions" class="form-check-input" type="checkbox" role="switch" id="flexDimentionsSwitch" checked>
+                <label class="form-check-label text-white" for="flexDimentionsSwitch">2D/3D</label>
+            </div>
+        </div>
+        <div class="input-group mb-2">
+            <div class="form-check form-switch">
                 <input v-model="bloom_show" v-on:click="handleChangeBloom" class="form-check-input" type="checkbox" role="switch" id="flexBloomSwitch" checked>
                 <label class="form-check-label text-white" for="flexBloomSwitch">Bloom Pass</label>
             </div>
@@ -15,6 +27,8 @@
                 </option>
             </select>
         </div>
+
+        
     </div>
     <div class="row"><div class="col text-center"><h1>{{ ledger }}</h1><small class="text-white">accounts renderered: {{ Object.keys(this.accounts).length }}</small> <small class="text-white">ledgers: {{ ledgers }}</small></div></div>
     <div id="3d-graph"></div>
@@ -33,7 +47,7 @@ import { CSS2DRenderer, CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRe
 
 const glitchPass = new GlitchPass(64)
 const bloomPass = new UnrealBloomPass()
-bloomPass.strength = 4
+bloomPass.strength = 2
 bloomPass.radius = 1
 bloomPass.threshold = 0
 
@@ -45,7 +59,9 @@ export default {
         return {
             client: undefined,
             network: 'xrpl',
+            dimentions: true,
             bloom_show: true,
+            animation: true,
             networks: [
                 {label: 'xrpl', value: 'xrpl'},
                 {label: 'xahau', value: 'xahau'}
@@ -58,7 +74,6 @@ export default {
             links: [],
             ledgers: 0,
             ignored: [
-                'rHktfGUbjqzU4GsYCMc1pDjdHXb5CJamto',
                 'rxRpSNb1VktvzBz8JF2oJC6qaww6RZ7Lw'
             ] // remove spam from the render, if wanted.
         }
@@ -72,6 +87,7 @@ export default {
         this.$store.dispatch('clientConnect',  { network: this.network, force: false })
         await this.connect()
 
+        // fly
         this.graph = ForceGraph3D({
             controlType: 'trackball'
         })
@@ -83,9 +99,9 @@ export default {
             .backgroundColor('rgba(0,0,0,0)')
             .graphData({nodes: this.nodes, links: this.links})
             .nodeLabel('id')
-            // .enablePointerInteraction(false)
-            .onNodeClick(node => window.open((this.network === 'xrpl') ? `https://livenet.xrpl.org/accounts/${node.id}`:`https://xahau.xrpl.org/accounts/${node.id}`, '_blank'))
-            
+            .enablePointerInteraction(false)
+            // .onNodeClick(node => window.open((this.network === 'xrpl') ? `https://livenet.xrpl.org/accounts/${node.id}`:`https://xahau.xrpl.org/accounts/${node.id}`, '_blank'))
+        
         ///add arrows but slowwww
             // .linkDirectionalArrowLength(3.5)
             // .linkDirectionalArrowRelPos(1)
@@ -108,6 +124,27 @@ export default {
         // setTimeout(() => {
         //     this.graph.postProcessingComposer().removePass(glitchPass)
         // }, 10000)
+
+
+        //Define GUI
+        // const Settings = function() {
+        //     this.redDistance = 20;
+        //     this.greenDistance = 20;
+        // }
+
+        // const settings = new Settings()
+        // const gui = new dat.GUI()
+
+        // const controllerOne = gui.add(settings, 'redDistance', 0, 100)
+        // const controllerTwo = gui.add(settings, 'greenDistance', 0, 100)
+        
+        // controllerOne.onChange(updateLinkDistance)
+        // controllerTwo.onChange(updateLinkDistance)
+
+        // function updateLinkDistance() {
+        // linkForce.distance(link => link.color ? settings.redDistance : settings.greenDistance)
+        //     graph.numDimensions(3) // Re-heat simulation
+        // }
     },
     methods: {
         handleChangeBloom() {
@@ -122,8 +159,21 @@ export default {
                 links: this.links
             })
         },
+        handleChangeAnimation() {
+            (this.animation) ? this.graph.pauseAnimation() : this.graph.resumeAnimation()
+            this.animation = !this.animation
+        },
+        handleChangDimentions() {
+            (!this.dimentions) ? this.graph.numDimensions(3) : this.graph.numDimensions(2)
+        },
         async handleChangeNetwork(event) {
             this.network = event.target.value
+            
+
+            this.$store.dispatch('clientConnect',  { network: this.network, force: false })
+            await this.connect()
+
+            this.ledgers = 0
             this.nodes = []
             this.links = []
             this.accounts = {}
@@ -131,9 +181,6 @@ export default {
                 nodes: this.nodes,
                 links: this.links
             })
-
-            this.$store.dispatch('clientConnect',  { network: this.network, force: false })
-            await this.connect()
         },
         async connect() {
             if (this.client !== undefined) {
@@ -161,9 +208,6 @@ export default {
             this.client = this.$store.getters.getClient(this.network)
             console.log(await this.client.send({'command': 'server_info'}))
             const callback = async (event) => {
-                // this.accounts = {}
-                // this.nodes = []
-                // this.links = []
                 let request = {
                     'id': 'xrpl-local',
                     'command': 'ledger',
@@ -197,8 +241,25 @@ export default {
                     nodes: this.nodes,
                     links: this.links
                 })
+
+                // if ('ledger' in ledger_result && 'transactions' in ledger_result.ledger) {
+                //     // console.log('transactions', transactions)
+
+                //     for (let i = 0; i < ledger_result.ledger.transactions.length; i++) {
+                //         const transaction = ledger_result.ledger.transactions[i]
+                //         // todo
+                //         if (transaction.TransactionType === 'Payment') {
+                //             let x = this.links.filter(link => link.source == transaction.Account)
+                //             console.log(transaction.Account, x.length)
+                //         }
+                //         if (transaction.TransactionType === 'OfferCreate') {
+                //             let x = this.links.filter(link => link.source == transaction.Account)
+                //             console.log(transaction.Account, x.length)
+                //         }
+                //     }
+                // }
+                
                 // console.log('accounts', Object.keys(this.accounts).length)
-                // this.graph.pauseAnimation()
                 this.ledgers++
             }
 
@@ -254,7 +315,6 @@ export default {
                     this.links.push({ source: data.sourceAccount, target: element.account, group })        
                 }
             }
-            
         },
         currencyHexToUTF8(code) {
             if (code.length === 3)
