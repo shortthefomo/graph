@@ -1,0 +1,254 @@
+<template>
+    <div class="d-flex align-content-center flex-wrap justify-content-center">
+        <div class="input-group mb-2">
+            <div class="form-check form-switch">
+                <input v-model="bloom_show" v-on:click="handleChangeBloom" class="form-check-input" type="checkbox" role="switch" id="flexBloomSwitch" checked>
+                <label class="form-check-label text-white" for="flexBloomSwitch">Bloom Pass</label>
+            </div>
+        </div>
+        <div class="input-group mb-2">
+            <span class="input-group-text">Network</span>
+            <select v-model="network" v-on:change="handleChangeNetwork($event)">
+                <option v-for="(option, name, index) in networks" :value="option.value" :key="index">
+                {{ option.label }}
+                </option>
+            </select>
+        </div>
+    </div>
+    <div id="3d-graph"></div>
+</template>
+
+<script>
+import pathParser from 'xrpl-tx-path-parser'
+import decimal from 'decimal.js'
+import ForceGraph3D from '3d-force-graph'
+import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js'
+import { GlitchPass } from 'three/examples/jsm/postprocessing/GlitchPass.js'
+
+const glitchPass = new GlitchPass(64)
+const bloomPass = new UnrealBloomPass()
+bloomPass.strength = 4
+bloomPass.radius = 1
+bloomPass.threshold = 0
+
+export default {
+    name: 'Graph',
+    components: {
+    },
+    data() {
+        return {
+            network: 'xrpl',
+            bloom_show: true,
+            networks: [
+                {label: 'xrpl', value: 'xrpl'},
+                {label: 'xahau', value: 'xahau'}
+            ],
+            graph: undefined,
+            accounts: {},
+            loaded: false,
+            nodes: [],
+            links: []
+        }
+    },
+    computed: {
+    },
+    
+    async mounted() {
+        console.log('loading...')
+        
+        this.$store.dispatch('clientConnect',  { network: this.network, force: false })
+        await this.connect()
+
+        this.graph = ForceGraph3D({alpha: true,
+        powerPreference: 'high-performance',
+        antialias: false})
+        (document.getElementById('3d-graph'))
+            .backgroundColor('rgba(0,0,0,0)')
+            .graphData({nodes: this.nodes, links: this.links})
+            .nodeLabel('id')
+        
+        this.graph.postProcessingComposer().addPass(bloomPass)
+        // this.graph.postProcessingComposer().addPass(glitchPass)
+        // setTimeout(() => {
+        //     this.graph.postProcessingComposer().removePass(glitchPass)
+        // }, 10000)
+    },
+    methods: {
+        handleChangeBloom() {
+            if (!this.bloom_show) {
+                this.graph.postProcessingComposer().addPass(bloomPass)
+            }
+            else {
+                this.graph.postProcessingComposer().removePass(bloomPass)
+            }
+            this.graph.graphData({
+                nodes: this.nodes,
+                links: this.links
+            })
+        },
+        async handleChangeNetwork(event) {
+            this.network = event.target.value
+            this.nodes = []
+            this.links = []
+            this.accounts = {}
+            this.graph.graphData({
+                nodes: this.nodes,
+                links: this.links
+            })
+
+            this.$store.dispatch('clientConnect',  { network: this.network, force: false })
+            await this.connect()
+
+            const client = this.$store.getters.getClient(this.network)
+            console.log(await client.send({'command': 'server_info'}))
+        },
+        async connect() {
+            const nodes = import.meta.env.VITE_APP_XAH_WSS.split(', ')
+            this.$store.dispatch('setClientNodes', { network: 'xahau', nodes: nodes })
+            // const nodes = import.meta.env.VITE_APP_XRPL_WSS.split(', ')
+            // this.$store.dispatch('setClientNodes', { network: 'xrpl', nodes: nodes })
+
+
+            console.log('connect ' + this.network)
+            this.$store.dispatch('clearBooks', this.network)
+            this.$store.dispatch('clientConnect', { network: this.network, force: false })
+
+            const xrpl = this.$store.getters.getClient(this.network)
+            this.ledgerClose()
+        },
+        ledgerClose() {
+            const client = this.$store.getters.getClient(this.network)
+            const callback = async (event) => {
+                // this.accounts = {}
+                // this.nodes = []
+                // this.links = []
+                let request = {
+                    'id': 'xrpl-local',
+                    'command': 'ledger',
+                    'ledger_hash': event.ledger_hash,
+                    'ledger_index': 'validated',
+                    'transactions': true,
+                    'expand': true,
+                    'owner_funds': true
+                }
+                const ledger_result = await client.send(request)
+                // console.log('ledger_result', ledger_result)
+                if ('error' in ledger_result) { return }
+
+                if ('ledger' in ledger_result && 'transactions' in ledger_result.ledger) {
+                    // console.log('transactions', transactions)
+
+                    for (let i = 0; i < ledger_result.ledger.transactions.length; i++) {
+                        const transaction = ledger_result.ledger.transactions[i]
+                        // todo
+                        if (transaction.TransactionType === 'Payment') {
+                            this.graphPayment(transaction)
+                        }
+                        if (transaction.TransactionType === 'OfferCreate') {
+                            this.graphOfferCreate(transaction)
+                        }
+                    }
+                }
+
+                this.graph.graphData({
+                    nodes: this.nodes,
+                    links: this.links
+                })
+                // console.log(this.accounts)
+                // this.graph.pauseAnimation()
+            }
+
+            client.on('ledger', callback)
+        },
+        graphOfferCreate(transaction) {
+            transaction.meta  = transaction.metaData
+            try {
+                const data = pathParser(transaction)
+                // console.log(data)
+                this.graphData(data, 'dex')
+            } catch (e) {
+                // ignore...
+            }
+            
+        },
+        graphPayment(transaction) {
+            transaction.meta  = transaction.metaData
+            try {
+                const data = pathParser(transaction)
+                this.graphData(data)
+            } catch (e) {
+                // ignore...
+            }
+        },
+        graphData(data, type = undefined) {
+            for (let index = 0; index < data.accountBalanceChanges.length; index++) {
+                const element = data.accountBalanceChanges[index]
+                const group = type !== undefined ? type: element.isAMM ? 'amm': element.isOffer ? 'dex' : element.isDirect? 'direct' : 'rippling'
+                const color = type !== undefined ? '#00e56a': element.isAMM ? '#FF1A8B': element.isOffer ? '#00e56a' : element.isDirect? '#974CFF' : '#FFFFFF'
+                if (this.accounts[element.account] === undefined) {
+                    this.accounts[element.account] = {
+                        account: element.account
+                    }
+
+                    this.nodes.push({ id: element.account, group, color })
+                }
+                if (data.sourceAccount !== element.account) {
+                    this.links.push({ source: data.sourceAccount, target: element.account, group })        
+                }
+            }
+        },
+        currencyHexToUTF8(code) {
+            if (code.length === 3)
+                return code
+            let decoded = new TextDecoder()
+                .decode(this.hexToBytes(code))
+            let padNull = decoded.length
+            while (decoded.charAt(padNull - 1) === '\0')
+                padNull--
+            return decoded.slice(0, padNull)
+        },
+
+        hexToBytes(hex) {
+            let bytes = new Uint8Array(hex.length / 2)
+            for (let i = 0; i !== bytes.length; i++) {
+                bytes[i] = parseInt(hex.substr(i * 2, 2), 16)
+            }
+            return bytes
+        }
+    }
+}
+</script>
+
+<style lang="scss" scoped>
+.home {
+    color: #ffffff;
+}
+
+.graph {
+    border: 3px dashed #383838;
+}
+
+h1 {
+    font-family: "Minecraft";
+    font-size: 7em;
+    background-image: url("https://img.freepik.com/premium-vector/pixel-art-seamless-background-night-sky-space-8bit-style-vector-illustration-eps-10_148553-724.jpg?w=360");
+    color: #fff;
+    color: transparent;
+    background-size: contain;
+    -webkit-background-clip: text;
+    filter: drop-shadow(0px -3px 1px rgba(0, 0, 0, 1));
+    animation: stripes 5s infinite alternate;
+}
+
+@keyframes stripes {
+    100% {
+        background-position: 100px 0, 100px 0, 100px 0;
+    }
+}
+
+@font-face {
+    font-family: "Minecraft";
+    src: url("//db.onlinewebfonts.com/t/6ab539c6fc2b21ff0b149b3d06d7f97c.eot");
+    src: url("//db.onlinewebfonts.com/t/6ab539c6fc2b21ff0b149b3d06d7f97c.eot?#iefix") format("embedded-opentype"), url("//db.onlinewebfonts.com/t/6ab539c6fc2b21ff0b149b3d06d7f97c.woff2") format("woff2"), url("//db.onlinewebfonts.com/t/6ab539c6fc2b21ff0b149b3d06d7f97c.woff") format("woff"), url("//db.onlinewebfonts.com/t/6ab539c6fc2b21ff0b149b3d06d7f97c.ttf") format("truetype"), url("//db.onlinewebfonts.com/t/6ab539c6fc2b21ff0b149b3d06d7f97c.svg#Minecraft") format("svg");
+}
+</style>
