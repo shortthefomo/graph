@@ -45,7 +45,7 @@
     <div class="row"><div class="col text-center"><h1>{{ ledger }}</h1><small class="text-white">accounts renderered: {{ Object.keys(this.accounts).length }}</small> <small class="text-white">ledgers: {{ ledgers }}</small></div></div>
     <div id="3d-graph"></div>
     <div class="text-white">
-        <p>spamm accounts removed: {{ ignored.join(', ') }}</p>
+        <p>spam accounts removed: {{ ignored.join(', ') }}</p>
     </div>
 </template>
 
@@ -115,7 +115,7 @@ export default {
             .graphData({nodes: this.nodes, links: this.links})
             .nodeLabel('id')
             .enablePointerInteraction(false)
-            // .enableNodeDrag(false)
+            .enableNodeDrag(false)
 
             // .onNodeClick(node => window.open((this.network === 'xrpl') ? `https://livenet.xrpl.org/accounts/${node.id}`:`https://xahau.xrpl.org/accounts/${node.id}`, '_blank'))
         
