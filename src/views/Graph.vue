@@ -78,7 +78,7 @@ export default {
             network: 'xrpl',
             dimentions: true,
             bloom_show: true,
-            animation: 200,
+            animation: 1200,
             animations: [
                 { label: '200ms', value: '200' },
                 { label: '800ms', value: '800' },
