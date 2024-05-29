@@ -4,7 +4,13 @@
         <div class="input-group mb-2">
             <div class="form-check form-switch">
                 <input v-model="animation" v-on:click="handleChangeAnimation" class="form-check-input" type="checkbox" role="switch" id="flexBloomAnimation" checked>
-                <label class="form-check-label text-white" for="flexBloomAnimation">Animate/Pause</label>
+                <label class="form-check-label text-white" for="flexBloomAnimation">Animate</label>
+            </div>
+        </div>
+        <div class="input-group mb-2">
+            <div class="form-check form-switch">
+                <input v-model="pause" v-on:click="handleChangePause" class="form-check-input" type="checkbox" role="switch" id="flexBloomPause" checked>
+                <label class="form-check-label text-white" for="flexBloomPause">Pause Data</label>
             </div>
         </div>
         <div class="input-group mb-2">
@@ -80,6 +86,7 @@ export default {
             nodes: [],
             links: [],
             ledgers: 0,
+            pause: false,
             ignored: [
                 'rxRpSNb1VktvzBz8JF2oJC6qaww6RZ7Lw'
             ] // remove spam from the render, if wanted.
@@ -107,8 +114,23 @@ export default {
             .graphData({nodes: this.nodes, links: this.links})
             .nodeLabel('id')
             .enablePointerInteraction(false)
+            .enableNodeDrag(false)
+
             // .onNodeClick(node => window.open((this.network === 'xrpl') ? `https://livenet.xrpl.org/accounts/${node.id}`:`https://xahau.xrpl.org/accounts/${node.id}`, '_blank'))
         
+            // const isRotationActive = true
+            // const distance = 1400
+            // let angle = 0
+            // setInterval(() => {
+            //     if (isRotationActive) {
+            //         this.graph.cameraPosition({
+            //         x: distance * Math.sin(angle),
+            //         z: distance * Math.cos(angle)
+            //         });
+            //         angle += Math.PI / 300;
+            //     }
+            // }, 10)
+
         ///add arrows but slowwww
             // .linkDirectionalArrowLength(3.5)
             // .linkDirectionalArrowRelPos(1)
@@ -176,6 +198,9 @@ export default {
                 this.graph.onNodeClick()
             }
         },
+        handleChangePause() {
+            // do nothing
+        },
         handleChangeAnimation() {
             (this.animation) ? this.graph.pauseAnimation() : this.graph.resumeAnimation()
             this.animation = !this.animation
@@ -225,6 +250,7 @@ export default {
             this.client = this.$store.getters.getClient(this.network)
             console.log(await this.client.send({'command': 'server_info'}))
             const callback = async (event) => {
+                if (this.pause) { return }
                 let request = {
                     'id': 'xrpl-local',
                     'command': 'ledger',
@@ -309,6 +335,7 @@ export default {
                 if (this.ignored.includes(element.account)) { continue }
                 const group = type !== undefined ? type: element.isAMM ? 'amm': element.isOffer ? 'dex' : element.isDirect? 'direct' : 'rippling'
                 const color = type !== undefined ? '#00e56a': element.isAMM ? '#FF1A8B': element.isOffer ? '#00e56a' : element.isDirect? '#974CFF' : '#FFFFFF'
+
                 if (this.accounts[element.account] === undefined) {
                     this.accounts[element.account] = {
                         account: element.account
