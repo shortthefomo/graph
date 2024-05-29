@@ -1,45 +1,49 @@
 <template>
     
-    <div class="d-flex align-content-center flex-wrap justify-content-center">
-        <div class="input-group mb-2">
-            <div class="form-check form-switch">
-                <input v-model="animation" v-on:click="handleChangeAnimation" class="form-check-input" type="checkbox" role="switch" id="flexBloomAnimation" checked>
-                <label class="form-check-label text-white" for="flexBloomAnimation">Animate</label>
+    <div class="row">
+        <div class="col ms-5">
+            <div class="input-group mb-2">
+                <span class="input-group-text">Network</span>
+                <select v-model="network" v-on:change="handleChangeNetwork($event)">
+                    <option v-for="(option, index) in networks" :value="option.value" :key="index">
+                        {{ option.label }}
+                    </option>
+                </select>
             </div>
-        </div>
-        <div class="input-group mb-2">
-            <div class="form-check form-switch">
-                <input v-model="pause" v-on:click="handleChangePause" class="form-check-input" type="checkbox" role="switch" id="flexBloomPause" checked>
-                <label class="form-check-label text-white" for="flexBloomPause">Pause Data</label>
+            <div class="input-group mb-2">
+                <span class="input-group-text">Animate</span>
+                <select v-model="animation" v-on:change="handleChangeAnimation($event)">
+                    <option v-for="(option, index) in animations" :value="option.value" :key="index">
+                        {{ option.label }}
+                    </option>
+                </select>
             </div>
-        </div>
-        <div class="input-group mb-2">
-            <div class="form-check form-switch">
-                <input v-model="dimentions" v-on:click="handleChangDimentions" class="form-check-input" type="checkbox" role="switch" id="flexDimentionsSwitch" checked>
-                <label class="form-check-label text-white" for="flexDimentionsSwitch">2D/3D</label>
+            <div class="input-group mb-2">
+                <div class="form-check form-switch">
+                    <input v-model="pause" v-on:click="handleChangePause" class="form-check-input" type="checkbox" role="switch" id="flexBloomPause" checked>
+                    <label class="form-check-label text-white" for="flexBloomPause">Pause Data</label>
+                </div>
             </div>
-        </div>
-        <div class="input-group mb-2">
-            <div class="form-check form-switch">
-                <input v-model="bloom_show" v-on:click="handleChangeBloom" class="form-check-input" type="checkbox" role="switch" id="flexBloomSwitch" checked>
-                <label class="form-check-label text-white" for="flexBloomSwitch">Bloom Pass</label>
+            <div class="input-group mb-2">
+                <div class="form-check form-switch">
+                    <input v-model="dimentions" v-on:click="handleChangDimentions" class="form-check-input" type="checkbox" role="switch" id="flexDimentionsSwitch" checked>
+                    <label class="form-check-label text-white" for="flexDimentionsSwitch">2D/3D</label>
+                </div>
             </div>
-        </div>
-        <div class="input-group mb-2">
-            <div class="form-check form-switch">
-                <input v-model="interaction" v-on:click="handleChangeInteraction" class="form-check-input" type="checkbox" role="switch" id="flexInteractionmSwitch" checked>
-                <label class="form-check-label text-white" for="flexInteractionSwitch">Click Nodes (performance degrades)</label>
+            <div class="input-group mb-2">
+                <div class="form-check form-switch">
+                    <input v-model="bloom_show" v-on:click="handleChangeBloom" class="form-check-input" type="checkbox" role="switch" id="flexBloomSwitch" checked>
+                    <label class="form-check-label text-white" for="flexBloomSwitch">Bloom Pass</label>
+                </div>
             </div>
+            <!-- <div class="input-group mb-2">
+                <div class="form-check form-switch">
+                    <input v-model="interaction" v-on:click="handleChangeInteraction" class="form-check-input" type="checkbox" role="switch" id="flexInteractionmSwitch" checked>
+                    <label class="form-check-label text-white" for="flexInteractionSwitch">Click Nodes (performance degrades)</label>
+                </div>
+            </div> -->
+            
         </div>
-        <div class="input-group mb-2">
-            <span class="input-group-text">Network</span>
-            <select v-model="network" v-on:change="handleChangeNetwork($event)">
-                <option v-for="(option, name, index) in networks" :value="option.value" :key="index">
-                {{ option.label }}
-                </option>
-            </select>
-        </div>
-
         
     </div>
     <div class="row"><div class="col text-center"><h1>{{ ledger }}</h1><small class="text-white">accounts renderered: {{ Object.keys(this.accounts).length }}</small> <small class="text-white">ledgers: {{ ledgers }}</small></div></div>
@@ -47,6 +51,7 @@
     <div class="text-white">
         <p>spam accounts removed: {{ ignored.join(', ') }}</p>
     </div>
+    
 </template>
 
 <script>
@@ -73,8 +78,13 @@ export default {
             network: 'xrpl',
             dimentions: true,
             bloom_show: true,
-            animation: true,
-            interaction: false,
+            animation: 200,
+            animations: [
+                { label: '200ms', value: '200' },
+                { label: '800ms', value: '800' },
+                { label: '1200ms', value: '1200' }
+            ],
+            interaction: true,
             networks: [
                 {label: 'xrpl', value: 'xrpl'},
                 {label: 'xahau', value: 'xahau'}
@@ -114,67 +124,11 @@ export default {
             .backgroundColor('rgba(0,0,0,0)')
             .graphData({nodes: this.nodes, links: this.links})
             .nodeLabel('id')
-            .enablePointerInteraction(false)
             .enableNodeDrag(false)
-
-            // .onNodeClick(node => window.open((this.network === 'xrpl') ? `https://livenet.xrpl.org/accounts/${node.id}`:`https://xahau.xrpl.org/accounts/${node.id}`, '_blank'))
-        
-            // const isRotationActive = true
-            // const distance = 1400
-            // let angle = 0
-            // setInterval(() => {
-            //     if (isRotationActive) {
-            //         this.graph.cameraPosition({
-            //         x: distance * Math.sin(angle),
-            //         z: distance * Math.cos(angle)
-            //         });
-            //         angle += Math.PI / 300;
-            //     }
-            // }, 10)
-
-        ///add arrows but slowwww
-            // .linkDirectionalArrowLength(3.5)
-            // .linkDirectionalArrowRelPos(1)
-            // .linkCurvature(0.25)
-
-
-            // .nodeThreeObject(node => {
-            //     const nodeEl = document.createElement('span')
-            //     nodeEl.textContent = node.id
-            //     nodeEl.style.color = node.color
-            //     nodeEl.className = 'node-label'
-            //     return new CSS2DObject(nodeEl)
-            // })
-
-            // .linkDirectionalParticles('value')
-            // .linkDirectionalParticleSpeed(d => d.value * 0.001)
+            .onNodeClick(node => window.open((this.network === 'xrpl') ? `https://livenet.xrpl.org/accounts/${node.id}`:`https://xahau.xrpl.org/accounts/${node.id}`, '_blank'))
         
         this.graph.postProcessingComposer().addPass(bloomPass)
-        // this.graph.postProcessingComposer().addPass(glitchPass)
-        // setTimeout(() => {
-        //     this.graph.postProcessingComposer().removePass(glitchPass)
-        // }, 10000)
-
-
-        //Define GUI
-        // const Settings = function() {
-        //     this.redDistance = 20;
-        //     this.greenDistance = 20;
-        // }
-
-        // const settings = new Settings()
-        // const gui = new dat.GUI()
-
-        // const controllerOne = gui.add(settings, 'redDistance', 0, 100)
-        // const controllerTwo = gui.add(settings, 'greenDistance', 0, 100)
-        
-        // controllerOne.onChange(updateLinkDistance)
-        // controllerTwo.onChange(updateLinkDistance)
-
-        // function updateLinkDistance() {
-        // linkForce.distance(link => link.color ? settings.redDistance : settings.greenDistance)
-        //     graph.numDimensions(3) // Re-heat simulation
-        // }
+        this.graph.cooldownTime(200)
     },
     methods: {
         handleChangeBloom() {
@@ -228,9 +182,8 @@ export default {
 
             
         },
-        handleChangeAnimation() {
-            (this.animation) ? this.graph.pauseAnimation() : this.graph.resumeAnimation()
-            this.animation = !this.animation
+        handleChangeAnimation(event) {
+            this.graph.cooldownTime(this.animation)
         },
         handleChangDimentions() {
             (!this.dimentions) ? this.graph.numDimensions(3) : this.graph.numDimensions(2)
@@ -352,12 +305,15 @@ export default {
                 // bit complicated here as there is a bug in .isOffer
                 let color
                 if (type === 'dex') {
-                    color = element.isAMM ? '#FF1A8B': '#00e56a'
+                    color = element.isAMM ? '#FF1A8B': '#00E56a'
                 }
                 else {
-                    color = element.isAMM ? '#FF1A8B': element.isOffer ? '#00e56a' : element.isDirect? '#974CFF' : '#FFFFFF'
+                    color = element.isAMM ? '#FF1A8B': element.isOffer ? '#00E56a' : element.isDirect? '#974CFF' : '#FFFFFF'
                 }
-                
+                // find teleport.
+                if (element.account === 'rTeLeproT3BVgjWoYrDYpKbBLXPaVMkge') {
+                    color = '#ffa500'
+                }
 
                 if (this.accounts[element.account] === undefined) {
                     this.accounts[element.account] = {
