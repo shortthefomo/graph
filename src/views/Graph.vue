@@ -304,9 +304,8 @@ export default {
 
                     for (let i = 0; i < ledger_result.ledger.transactions.length; i++) {
                         const transaction = ledger_result.ledger.transactions[i]
-                        // todo
                         if (transaction.TransactionType === 'Payment') {
-                            this.graphPayment(transaction)
+                           this.graphPayment(transaction)
                         }
                         if (transaction.TransactionType === 'OfferCreate') {
                             this.graphOfferCreate(transaction)
@@ -344,12 +343,22 @@ export default {
             }
         },
         graphData(data, type = undefined) {
+            console.log('data', data)
             for (let index = 0; index < data.accountBalanceChanges.length; index++) {
                 
                 const element = data.accountBalanceChanges[index]
                 if (this.ignored.includes(element.account)) { continue }
+                
                 const group = type !== undefined ? type: element.isAMM ? 'amm': element.isOffer ? 'dex' : element.isDirect? 'direct' : 'rippling'
-                const color = type !== undefined ? '#00e56a': element.isAMM ? '#FF1A8B': element.isOffer ? '#00e56a' : element.isDirect? '#974CFF' : '#FFFFFF'
+                // bit complicated here as there is a bug in .isOffer
+                let color
+                if (type === 'dex') {
+                    color = element.isAMM ? '#FF1A8B': '#00e56a'
+                }
+                else {
+                    color = element.isAMM ? '#FF1A8B': element.isOffer ? '#00e56a' : element.isDirect? '#974CFF' : '#FFFFFF'
+                }
+                
 
                 if (this.accounts[element.account] === undefined) {
                     this.accounts[element.account] = {
