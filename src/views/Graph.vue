@@ -59,7 +59,6 @@ import pathParser from 'xrpl-tx-path-parser'
 import ForceGraph3D from '3d-force-graph'
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js'
 import { GlitchPass } from 'three/examples/jsm/postprocessing/GlitchPass.js'
-import { CSS2DRenderer, CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRenderer.js'
 
 
 const glitchPass = new GlitchPass(64)
@@ -80,9 +79,10 @@ export default {
             bloom_show: true,
             animation: 1200,
             animations: [
-                { label: '200ms', value: '200' },
-                { label: '800ms', value: '800' },
-                { label: '1200ms', value: '1200' }
+                { label: '200ms', value: 200 },
+                { label: '800ms', value: 800 },
+                { label: '1200ms', value: 1200 },
+                { label: 'Infinity', value: Infinity },
             ],
             interaction: true,
             networks: [
