@@ -112,14 +112,10 @@ export default {
         this.$store.dispatch('clientConnect',  { network: this.network, force: false })
         await this.connect()
 
-        // fly
+        
         this.graph = ForceGraph3D({
-            controlType: 'trackball'
+            controlType: 'trackball'// fly
         })
-        // this.graph.renderer({
-        //     alpha: true,
-        //     powerPreference: 'high-performance',
-        //     antialias: false})
         (document.getElementById('3d-graph'))
             .backgroundColor('rgba(0,0,0,0)')
             .graphData({nodes: this.nodes, links: this.links})
@@ -128,7 +124,6 @@ export default {
             .onNodeClick(node => window.open((this.network === 'xrpl') ? `https://livenet.xrpl.org/accounts/${node.id}`:`https://xahau.xrpl.org/accounts/${node.id}`, '_blank'))
         
         this.graph.postProcessingComposer().addPass(bloomPass)
-        this.graph.cooldownTime(200)
     },
     methods: {
         handleChangeBloom() {
