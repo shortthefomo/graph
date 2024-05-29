@@ -87,6 +87,7 @@ export default {
             links: [],
             ledgers: 0,
             pause: false,
+            pausedRefill: [],
             ignored: [
                 'rxRpSNb1VktvzBz8JF2oJC6qaww6RZ7Lw'
             ] // remove spam from the render, if wanted.
@@ -114,7 +115,7 @@ export default {
             .graphData({nodes: this.nodes, links: this.links})
             .nodeLabel('id')
             .enablePointerInteraction(false)
-            .enableNodeDrag(false)
+            // .enableNodeDrag(false)
 
             // .onNodeClick(node => window.open((this.network === 'xrpl') ? `https://livenet.xrpl.org/accounts/${node.id}`:`https://xahau.xrpl.org/accounts/${node.id}`, '_blank'))
         
@@ -199,7 +200,33 @@ export default {
             }
         },
         handleChangePause() {
-            // do nothing
+            if (this.pause) {
+                this.pausedRefill.forEach(ledger_result => {
+                    // console.log('RF', ledger_result)
+                    if ('ledger' in ledger_result && 'transactions' in ledger_result.ledger) {
+                        // console.log('transactions', transactions)
+
+                        for (let i = 0; i < ledger_result.ledger.transactions.length; i++) {
+                            const transaction = ledger_result.ledger.transactions[i]
+                            // todo
+                            if (transaction.TransactionType === 'Payment') {
+                                this.graphPayment(transaction)
+                            }
+                            if (transaction.TransactionType === 'OfferCreate') {
+                                this.graphOfferCreate(transaction)
+                            }
+                        }
+                    }
+                    this.ledgers++
+                })
+                this.graph.graphData({
+                    nodes: this.nodes,
+                    links: this.links
+                })
+                this.pausedRefill = []
+            }
+
+            
         },
         handleChangeAnimation() {
             (this.animation) ? this.graph.pauseAnimation() : this.graph.resumeAnimation()
@@ -250,7 +277,7 @@ export default {
             this.client = this.$store.getters.getClient(this.network)
             console.log(await this.client.send({'command': 'server_info'}))
             const callback = async (event) => {
-                if (this.pause) { return }
+                
                 let request = {
                     'id': 'xrpl-local',
                     'command': 'ledger',
@@ -263,8 +290,15 @@ export default {
                 const ledger_result = await this.client.send(request)
                 // console.log('ledger_result', ledger_result)
                 if ('error' in ledger_result) { return }
+
+                
                 console.log('ledger_index', ledger_result.ledger.ledger_index)
                 this.ledger = ledger_result.ledger.ledger_index
+
+                if (this.pause) { 
+                    this.pausedRefill.push(ledger_result)
+                    return 
+                }
                 if ('ledger' in ledger_result && 'transactions' in ledger_result.ledger) {
                     // console.log('transactions', transactions)
 
@@ -284,25 +318,6 @@ export default {
                     nodes: this.nodes,
                     links: this.links
                 })
-
-                // if ('ledger' in ledger_result && 'transactions' in ledger_result.ledger) {
-                //     // console.log('transactions', transactions)
-
-                //     for (let i = 0; i < ledger_result.ledger.transactions.length; i++) {
-                //         const transaction = ledger_result.ledger.transactions[i]
-                //         // todo
-                //         if (transaction.TransactionType === 'Payment') {
-                //             let x = this.links.filter(link => link.source == transaction.Account)
-                //             console.log(transaction.Account, x.length)
-                //         }
-                //         if (transaction.TransactionType === 'OfferCreate') {
-                //             let x = this.links.filter(link => link.source == transaction.Account)
-                //             console.log(transaction.Account, x.length)
-                //         }
-                //     }
-                // }
-                
-                // console.log('accounts', Object.keys(this.accounts).length)
                 this.ledgers++
             }
 
