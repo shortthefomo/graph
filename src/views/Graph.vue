@@ -89,7 +89,7 @@ export default {
             pause: false,
             pausedRefill: [],
             ignored: [
-                'rxRpSNb1VktvzBz8JF2oJC6qaww6RZ7Lw'
+               // 'rxRpSNb1VktvzBz8JF2oJC6qaww6RZ7Lw'
             ] // remove spam from the render, if wanted.
         }
     },
