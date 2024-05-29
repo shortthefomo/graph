@@ -343,7 +343,6 @@ export default {
             }
         },
         graphData(data, type = undefined) {
-            console.log('data', data)
             for (let index = 0; index < data.accountBalanceChanges.length; index++) {
                 
                 const element = data.accountBalanceChanges[index]
