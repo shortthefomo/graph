@@ -59,6 +59,7 @@ import pathParser from 'xrpl-tx-path-parser'
 import ForceGraph3D from '3d-force-graph'
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js'
 import { GlitchPass } from 'three/examples/jsm/postprocessing/GlitchPass.js'
+import { forEach } from 'lodash'
 
 
 const glitchPass = new GlitchPass(64)
@@ -120,8 +121,9 @@ export default {
             .backgroundColor('rgba(0,0,0,0)')
             .graphData({nodes: this.nodes, links: this.links})
             .nodeLabel('id')
+            .nodeVal('size')
             .enableNodeDrag(false)
-            .onNodeClick(node => window.open((this.network === 'xrpl') ? `https://livenet.xrpl.org/accounts/${node.id}`:`https://xahau.xrpl.org/accounts/${node.id}`, '_blank'))
+            .onNodeClick(node => window.open((this.network === 'xrpl') ? `https://livenet.xrpl.org/transactions/${node.hash}`:`https://xahau.xrpl.org/transactions/${node.hash}`, '_blank'))
         
         this.graph.postProcessingComposer().addPass(bloomPass)
     },
@@ -220,6 +222,10 @@ export default {
 
             const xrpl = this.$store.getters.getClient(this.network)
             await this.ledgerClose()
+            // await this.accountTX('rapido5rxPmP4YkMZZEeXSHqWefxHEkqv6')
+            // await this.accountTX('rTeLeproT3BVgjWoYrDYpKbBLXPaVMkge')
+            // await this.accountTX('rfKsmLP6sTfVGDvga6rW6XbmSFUzc3G9f3')
+            
         },
         async ledgerClose() {
             this.client = this.$store.getters.getClient(this.network)
@@ -275,7 +281,7 @@ export default {
             try {
                 const data = pathParser(transaction)
                 // console.log(data)
-                this.graphData(data, 'dex')
+                this.graphData(data, transaction, 'dex')
             } catch (e) {
                 // ignore...
             }
@@ -285,15 +291,35 @@ export default {
             transaction.meta  = transaction.metaData
             try {
                 const data = pathParser(transaction)
-                this.graphData(data)
+                this.graphData(data, transaction)
             } catch (e) {
                 // ignore...
             }
         },
-        graphData(data, type = undefined) {
+        scaleValue(value) {
+            if (value < 1) { return 1 }
+            if (value < 10) { return 4 }
+            if (value < 100) { return 10 }
+            if (value < 1000) { return 30 }
+            if (value < 10000) { return 40 }
+            if (value < 100000) { return 60 }
+            if (value < 1000000) { return 70 }
+            if (value < 10000000) { return 80 }
+            if (value < 100000000) { return 100 }
+        },
+        graphData(data, transaction, type = undefined) {
             for (let index = 0; index < data.accountBalanceChanges.length; index++) {
-                
+                let value = 0
                 const element = data.accountBalanceChanges[index]
+
+                //size elements
+                element.balances.forEach(bal => {
+                    if (bal.currency === 'XRP') {
+                    value += Math.abs(Number(bal.value))
+                    }
+                })
+                // console.log(value)
+                
                 if (this.ignored.includes(element.account)) { continue }
                 
                 const group = type !== undefined ? type: element.isAMM ? 'amm': element.isOffer ? 'dex' : element.isDirect? 'direct' : 'rippling'
@@ -319,7 +345,7 @@ export default {
                         account: element.account
                     }
 
-                    this.nodes.push({ id: element.account, group, color  })
+                    this.nodes.push({ id: element.account, group, color, hash: transaction.hash, size: this.scaleValue(value) , value })
                 }
                 else {
                     // update colors to the latest other wise.
@@ -330,6 +356,8 @@ export default {
                             // console.log('color changed', element.account, node.color, color)
                             node.color = color
                         }
+                        this.nodes[index].value += value
+                        this.nodes[index].size = this.scaleValue(value)
                     }
                 }
 
@@ -337,6 +365,57 @@ export default {
                     this.links.push({ source: data.sourceAccount, target: element.account, group })        
                 }
             }
+        },
+        async accountTX(wallet) {
+            this.client = this.$store.getters.getClient(this.network)
+            console.log(await this.client.send({'command': 'server_info'}))
+            let account = await this.client.send({
+                'command': 'account_tx',
+                'account': wallet,
+                'ledger_index_min': -1,
+                'ledger_index_max': -1,
+                'binary': false,
+                'limit': 1000,
+                'forward': false
+            })
+            let marker = account.marker
+            console.log(account.transactions.length)
+            this.graphAccountTX(account)
+
+            console.log('marker', marker)
+            let counter = 0
+            while (marker !== undefined) {
+                account = await this.client.send({
+                    'command': 'account_tx',
+                    'account': wallet,
+                    'ledger_index_min': -1,
+                    'ledger_index_max': -1,
+                    'binary': false,
+                    'limit': 1000,
+                    'forward': false,
+                    'marker': marker
+                })
+                marker = account.marker
+                console.log(account.transactions.length)
+
+                this.graphAccountTX(account)
+                counter++
+                if (counter > 5) { break }
+                console.log('counter', counter)
+            }
+            
+        },
+        graphAccountTX(account) {
+            account.transactions.forEach(data => {
+                const transaction = {...data.tx}
+                transaction.metaData = {...data.meta}
+                if (transaction.TransactionType === 'Payment') {
+                    this.graphPayment(transaction)
+                }
+                if (transaction.TransactionType === 'OfferCreate') {
+                    this.graphOfferCreate(transaction)
+                }
+            })
         },
         currencyHexToUTF8(code) {
             if (code.length === 3)
