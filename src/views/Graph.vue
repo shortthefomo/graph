@@ -115,9 +115,7 @@ export default {
 
         
         this.graph = ForceGraph3D({
-            controlType: 'trackball',// fly
-            antialias: false,   
-            alpha: true 
+            controlType: 'trackball'// fly
         })
 
         // this.graph.forceEngine('ngraph')
