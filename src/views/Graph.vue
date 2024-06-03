@@ -115,8 +115,13 @@ export default {
 
         
         this.graph = ForceGraph3D({
-            controlType: 'trackball'// fly
+            controlType: 'trackball',// fly
+            antialias: false,   
+            alpha: true 
         })
+
+        // this.graph.forceEngine('ngraph')
+
         (document.getElementById('3d-graph'))
             .backgroundColor('rgba(0,0,0,0)')
             .graphData({nodes: this.nodes, links: this.links})
@@ -219,8 +224,7 @@ export default {
             console.log('connect ' + this.network)
             this.$store.dispatch('clearBooks', this.network)
             this.$store.dispatch('clientConnect', { network: this.network, force: false })
-
-            const xrpl = this.$store.getters.getClient(this.network)
+            
             await this.ledgerClose()
             // await this.accountTX('rapido5rxPmP4YkMZZEeXSHqWefxHEkqv6')
             // await this.accountTX('rTeLeproT3BVgjWoYrDYpKbBLXPaVMkge')
@@ -298,14 +302,15 @@ export default {
         },
         scaleValue(value) {
             if (value < 1) { return 1 }
-            if (value < 10) { return 4 }
-            if (value < 100) { return 10 }
-            if (value < 1000) { return 30 }
-            if (value < 10000) { return 40 }
-            if (value < 100000) { return 60 }
-            if (value < 1000000) { return 70 }
-            if (value < 10000000) { return 80 }
-            if (value < 100000000) { return 100 }
+            if (value < 10) { return 2 }
+            if (value < 100) { return 5 }
+            if (value < 1_000) { return 12 }
+            if (value < 10_000) { return 40 }
+            if (value < 100_000) { return 60 }
+            if (value < 1_000_000) { return 70 }
+            if (value < 10_000_000) { return 80 }
+            if (value < 100_000_000) { return 100 }
+            if (value < 1_000_000_000) { return 500 }
         },
         graphData(data, transaction, type = undefined) {
             for (let index = 0; index < data.accountBalanceChanges.length; index++) {
@@ -313,13 +318,13 @@ export default {
                 const element = data.accountBalanceChanges[index]
 
                 //size elements
+                
                 element.balances.forEach(bal => {
                     if (bal.currency === 'XRP') {
-                    value += Math.abs(Number(bal.value))
+                        value = Math.abs(Number(bal.value))
                     }
                 })
-                // console.log(value)
-                
+
                 if (this.ignored.includes(element.account)) { continue }
                 
                 const group = type !== undefined ? type: element.isAMM ? 'amm': element.isOffer ? 'dex' : element.isDirect? 'direct' : 'rippling'
@@ -345,7 +350,7 @@ export default {
                         account: element.account
                     }
 
-                    this.nodes.push({ id: element.account, group, color, hash: transaction.hash, size: this.scaleValue(value) , value })
+                    this.nodes.push({ id: element.account, group, color, hash: transaction.hash, size: this.scaleValue(value) })
                 }
                 else {
                     // update colors to the latest other wise.
@@ -356,8 +361,13 @@ export default {
                             // console.log('color changed', element.account, node.color, color)
                             node.color = color
                         }
-                        this.nodes[index].value += value
-                        this.nodes[index].size = this.scaleValue(value)
+                        if (value !== 0 && this.nodes[index].size !== undefined) {
+                            this.nodes[index].size = this.scaleValue(value)
+                        }
+                        if (this.nodes[index].size !== undefined) {
+                            this.nodes[index].size = this.scaleValue(value)
+                        }
+                        
                     }
                 }
 
