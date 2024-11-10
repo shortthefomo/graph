@@ -540,6 +540,9 @@ export default {
                 if (element.account === 'rTeLeproT3BVgjWoYrDYpKbBLXPaVMkge') {
                     color = '#ffa500'
                 }
+                if (element.account === 'rEVRTELEpb16FQSGgK8GRJGy9ChviquddK') {
+                    color = '#ffa500'
+                }
                 // corium bridge
                 if (element.account === 'rxXXXeMX8Gy5YvibvGLnQJ1XKKD7UswM1') {
                     color = '#ffa500'
