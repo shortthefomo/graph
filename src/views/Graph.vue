@@ -44,14 +44,31 @@
             </div> -->
             
         </div>
-        
+        <div class="col ms-5">
+            <div class="row text-light">
+                <p><i class="bi bi-circle-fill" style="color: #FF1A8B;"></i> AMM</p>
+            </div>
+            <div class="row text-light">
+                <p><i class="bi bi-circle-fill" style="color: #00E56a;"></i> DEX Trade</p>
+            </div>
+            <div class="row text-light">
+                <p><i class="bi bi-circle-fill" style="color: #974CFF;"></i> Direct Payment</p>
+            </div>
+            <div class="row text-light">
+                <p><i class="bi bi-circle-fill" style="color: #FFFFFF;"></i> Rippling Payment</p>
+            </div>
+            <div class="row text-light">
+                <p><i class="bi bi-circle-fill" style="color: #00FFFF;"></i> TrustSet</p>
+            </div>
+            <div class="row text-light">
+                <p><i class="bi bi-circle-fill" style="color: #FFFF00;"></i> NFT</p>
+            </div>
+        </div>
     </div>
+
+    
     <div class="row"><div class="col text-center"><h1>{{ ledger }}</h1><small class="text-white">accounts renderered: {{ Object.keys(this.accounts).length }}</small> <small class="text-white">ledgers: {{ ledgers }}</small></div></div>
     <div id="3d-graph"></div>
-    <div class="text-white">
-        <p>spam accounts removed: {{ ignored.join(', ') }}</p>
-    </div>
-    
 </template>
 
 <script>
@@ -162,13 +179,7 @@ export default {
 
                         for (let i = 0; i < ledger_result.ledger.transactions.length; i++) {
                             const transaction = ledger_result.ledger.transactions[i]
-                            // todo
-                            if (transaction.TransactionType === 'Payment') {
-                                this.graphPayment(transaction)
-                            }
-                            if (transaction.TransactionType === 'OfferCreate') {
-                                this.graphOfferCreate(transaction)
-                            }
+                            this.handelTx(transaction)
                         }
                     }
                     this.ledgers++
@@ -203,6 +214,54 @@ export default {
                 nodes: this.nodes,
                 links: this.links
             })
+        },
+        handelTx(transaction) {
+            if (transaction.TransactionType === 'Payment') {
+                this.graphPayment(transaction)
+            }
+            else if (transaction.TransactionType === 'OfferCreate') {
+                this.graphOfferCreate(transaction)
+            }
+            else if (transaction.TransactionType === 'OfferCancel') {
+            
+            }
+            else if (transaction.TransactionType === 'TrustSet') {
+                // console.log('TrustSet', transaction)
+                this.graphTrustSet(transaction)
+            }
+            else if (transaction.TransactionType === 'AMMDeposit') {
+                this.graphAMMDeposit(transaction)
+                // console.log('AMMDeposit', transaction)
+            }
+            else if (transaction.TransactionType === 'AMMWithdraw') {
+                this.graphAMMWithdraw(transaction)
+                // console.log('AMMWithdraw', transaction)
+            }
+            else if (transaction.TransactionType === 'AMMBid') {
+                this.graphAMMBid(transaction)
+                // console.log('AMMBid', transaction)
+            }
+            else if (transaction.TransactionType === 'NFTokenCreateOffer') {
+                this.graphNFTokenCreateOffer(transaction)
+                // console.log('NFTokenCreateOffer', transaction)
+            }
+            else if (transaction.TransactionType === 'NFTokenCancelOffer') {
+                // do nothing
+            }
+            else if (transaction.TransactionType === 'NFTokenAcceptOffer') {
+                this.graphNFTokenAcceptOffer(transaction)
+                // console.log('NFTokenAcceptOffer', transaction)
+            }
+            else if (transaction.TransactionType === 'OracleSet') {
+                // do nothing
+            }
+            else if (transaction.TransactionType === 'TicketCreate') {
+                // do nothing
+            }
+            else {
+                console.log('type', transaction.TransactionType)
+                console.log('other', transaction)
+            }
         },
         async connect() {
             if (this.client !== undefined) {
@@ -260,12 +319,8 @@ export default {
 
                     for (let i = 0; i < ledger_result.ledger.transactions.length; i++) {
                         const transaction = ledger_result.ledger.transactions[i]
-                        if (transaction.TransactionType === 'Payment') {
-                           this.graphPayment(transaction)
-                        }
-                        if (transaction.TransactionType === 'OfferCreate') {
-                            this.graphOfferCreate(transaction)
-                        }
+                        
+                        this.handelTx(transaction)
                     }
                 }
 
@@ -298,6 +353,153 @@ export default {
                 // ignore...
             }
         },
+        graphTrustSet(transaction) {
+            if (this.accounts[transaction.Account] === undefined) {
+                this.accounts[transaction.Account] = {
+                    account: transaction.Account
+                }
+            }
+            if (this.accounts[transaction.LimitAmount.issuer] === undefined) {
+                this.accounts[transaction.LimitAmount.issuer] = {
+                    account: transaction.LimitAmount.issuer
+                }
+            }
+            this.nodes.push({ id: transaction.LimitAmount.issuer, group: 'TrustSet', color: '#00FFFF', hash: transaction.hash, size: 1 })
+            this.nodes.push({ id: transaction.Account, group: 'TrustSet', color: '#00FFFF', hash: transaction.hash, size: 1 })
+            this.links.push({ source: transaction.Account, target: transaction.LimitAmount.issuer, group: 'TrustSet' })
+        },
+        graphAMMDeposit(transaction) {
+            if (this.accounts[transaction.Account] === undefined) {
+                this.accounts[transaction.Account] = {
+                    account: transaction.Account
+                }
+            }
+            
+            if (typeof transaction.Amount === 'object') {
+                this.nodes.push({ id: transaction.Amount.issuer, group: 'AMM', color: '#FF77FF', hash: transaction.hash, size: 1 })
+                this.nodes.push({ id: transaction.Account, group: 'AMM', color: '#FF77FF', hash: transaction.hash, size: 1 })
+                this.links.push({ source: transaction.Account, target: transaction.Amount.issuer, group: 'AMM' })
+                if (this.accounts[transaction.Amount.issuer] === undefined) {
+                    this.accounts[transaction.Amount.issuer] = {
+                        account: transaction.Amount.issuer
+                    }
+                }
+            }
+            if (typeof transaction.Amount2 === 'object') {
+                this.nodes.push({ id: transaction.Amount2.issuer, group: 'AMM', color: '#FF77FF', hash: transaction.hash, size: 1 })
+                this.nodes.push({ id: transaction.Account, group: 'AMM', color: '#FF77FF', hash: transaction.hash, size: 1 })
+                this.links.push({ source: transaction.Account, target: transaction.Amount2.issuer, group: 'AMM' })
+                if (this.accounts[transaction.Amount2.issuer] === undefined) {
+                    this.accounts[transaction.Amount2.issuer] = {
+                        account: transaction.Amount2.issuer
+                    }
+                }
+            }
+        },
+        graphAMMWithdraw(transaction) {
+            console.log('graphAMMWithdraw', transaction)
+            if (this.accounts[transaction.Account] === undefined) {
+                this.accounts[transaction.Account] = {
+                    account: transaction.Account
+                }
+            }
+            
+            
+            if (transaction.Asset.issuer !== 'XRP') {
+                this.nodes.push({ id: transaction.Asset.issuer, group: 'AMM', color: '#FF77FF', hash: transaction.hash, size: 1 })
+                this.nodes.push({ id: transaction.Account, group: 'AMM', color: '#FF77FF', hash: transaction.hash, size: 1 })
+                this.links.push({ source: transaction.Account, target: transaction.Asset.issuer, group: 'AMM' })
+                if (this.accounts[transaction.Asset.issuer] === undefined) {
+                    this.accounts[transaction.Asset.issuer] = {
+                        account: transaction.Asset.issuer
+                    }
+                }
+            }
+            if (transaction.Asset2.issuer !== 'XRP') {
+                this.nodes.push({ id: transaction.Asset2.issuer, group: 'AMM', color: '#FF77FF', hash: transaction.hash, size: 1 })
+                this.nodes.push({ id: transaction.Account, group: 'AMM', color: '#FF77FF', hash: transaction.hash, size: 1 })
+                this.links.push({ source: transaction.Account, target: transaction.Asset2.issuer, group: 'AMM' })
+                if (this.accounts[transaction.Asset2.issuer] === undefined) {
+                    this.accounts[transaction.Asset2.issuer] = {
+                        account: transaction.Asset2.issuer
+                    }
+                }
+            }
+        },
+        graphAMMBid(transaction) {
+            console.log('graphAMMBid', transaction)
+            if (this.accounts[transaction.Account] === undefined) {
+                this.accounts[transaction.Account] = {
+                    account: transaction.Account
+                }
+            }
+            
+            
+            if (transaction.Asset.issuer !== 'XRP') {
+                this.nodes.push({ id: transaction.Asset.issuer, group: 'AMM', color: '#FF77FF', hash: transaction.hash, size: 1 })
+                this.nodes.push({ id: transaction.Account, group: 'AMM', color: '#FF77FF', hash: transaction.hash, size: 1 })
+                this.links.push({ source: transaction.Account, target: transaction.Asset.issuer, group: 'AMM' })
+                if (this.accounts[transaction.Asset.issuer] === undefined) {
+                    this.accounts[transaction.Asset.issuer] = {
+                        account: transaction.Asset.issuer
+                    }
+                }
+            }
+            if (transaction.Asset2.issuer !== 'XRP') {
+                this.nodes.push({ id: transaction.Asset2.issuer, group: 'AMM', color: '#FF77FF', hash: transaction.hash, size: 1 })
+                this.nodes.push({ id: transaction.Account, group: 'AMM', color: '#FF77FF', hash: transaction.hash, size: 1 })
+                this.links.push({ source: transaction.Account, target: transaction.Asset2.issuer, group: 'AMM' })
+                if (this.accounts[transaction.Asset2.issuer] === undefined) {
+                    this.accounts[transaction.Asset2.issuer] = {
+                        account: transaction.Asset2.issuer
+                    }
+                }
+            }
+        },
+        graphNFTokenAcceptOffer(transaction) {
+            let Buyer
+            // console.log('graphNFTokenAcceptOffer', transaction)
+            let meta = transaction.metaData || transaction.meta
+            for (let index = 0; index < meta.AffectedNodes.length; index++) {
+                const nodes = meta.AffectedNodes[index]
+                if (nodes.DeletedNode === undefined) { continue }
+                if (nodes.LedgerEntryType !== 'NFTokenOffer') { continue }
+                Buyer = nodes.FinalFields.Owner
+                this.nodes.push({ id: Buyer, group: 'NFT', color: '#FFFF00', hash: transaction.hash, size: 1 })
+            }
+            if (this.accounts[transaction.Account] === undefined) {
+                this.accounts[transaction.Account] = {
+                    account: transaction.Account
+                }
+            }
+            if (this.accounts[Buyer] === undefined) {
+                this.accounts[Buyer] = {
+                    account: Buyer
+                }
+            }
+
+            
+            this.nodes.push({ id: transaction.Account, group: 'NFT', color: '#FFFF00', hash: transaction.hash, size: 1 })
+            if (Buyer !== undefined) {
+                this.links.push({ source: transaction.Account, target: Buyer, group: 'NFT' })
+            }
+        },
+        graphNFTokenCreateOffer(transaction) {
+            if (this.accounts[transaction.Account] === undefined) {
+                this.accounts[transaction.Account] = {
+                    account: transaction.Account
+                }
+            }
+            if (this.accounts[transaction.Destination] === undefined) {
+                this.accounts[transaction.Destination] = {
+                    account: transaction.Destination
+                }
+            }
+
+            this.nodes.push({ id: transaction.Destination, group: 'NFT', color: '#FFFF00', hash: transaction.hash, size: 1 })
+            this.nodes.push({ id: transaction.Account, group: 'NFT', color: '#FFFF00', hash: transaction.hash, size: 1 })
+            this.links.push({ source: transaction.Account, target: transaction.Destination, group: 'NFT' })
+        },
         scaleValue(value) {
             if (value < 1) { return 1 }
             if (value < 10) { return 2 }
@@ -325,10 +527,10 @@ export default {
 
                 if (this.ignored.includes(element.account)) { continue }
                 
-                const group = type !== undefined ? type: element.isAMM ? 'amm': element.isOffer ? 'dex' : element.isDirect? 'direct' : 'rippling'
+                const group = type !== undefined ? type: element.isAMM ? 'AMM': element.isOffer ? 'DEX' : element.isDirect? 'DIRECT' : 'RIPPLING'
                 // bit complicated here as there is a bug in .isOffer
                 let color
-                if (type === 'dex') {
+                if (type === 'DEX') {
                     color = element.isAMM ? '#FF1A8B': '#00E56a'
                 }
                 else {
@@ -454,6 +656,14 @@ export default {
 
 .graph {
     border: 3px dashed #383838;
+}
+
+.graph-key {
+    width: 10px;
+    height: 20px;
+    display: block;
+    position: absolute;
+    margin-left: 15px;
 }
 
 h1 {
