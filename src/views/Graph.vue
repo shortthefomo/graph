@@ -81,7 +81,7 @@ import { forEach } from 'lodash'
 
 const glitchPass = new GlitchPass(64)
 const bloomPass = new UnrealBloomPass()
-bloomPass.strength = 2
+bloomPass.strength = 0.5
 bloomPass.radius = 1
 bloomPass.threshold = 0
 
@@ -134,7 +134,7 @@ export default {
         this.graph = ForceGraph3D({
             controlType: 'trackball'// fly
         })
-
+        // this.graph.warmupTicks(100)
         // this.graph.forceEngine('ngraph')
 
         (document.getElementById('3d-graph'))
@@ -142,6 +142,7 @@ export default {
             .graphData({nodes: this.nodes, links: this.links})
             .nodeLabel('id')
             .nodeVal('size')
+            .nodeResolution(3)
             .enableNodeDrag(false)
             .onNodeClick(node => window.open((this.network === 'xrpl') ? `https://livenet.xrpl.org/transactions/${node.hash}`:`https://xahau.xrpl.org/transactions/${node.hash}`, '_blank'))
         
