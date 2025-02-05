@@ -1,8 +1,8 @@
 <template>
     
     <div class="row">
-        <div class="col ms-5">
-            <div class="input-group mb-2">
+        <div class="col ms-5 mt-5">
+            <div class="input-group mb-2 mt-5">
                 <span class="input-group-text">Network</span>
                 <select v-model="network" v-on:change="handleChangeNetwork($event)">
                     <option v-for="(option, index) in networks" :value="option.value" :key="index">
@@ -10,7 +10,7 @@
                     </option>
                 </select>
             </div>
-            <div class="input-group mb-2">
+            <!-- <div class="input-group mb-2">
                 <span class="input-group-text">Animate</span>
                 <select v-model="animation" v-on:change="handleChangeAnimation($event)">
                     <option v-for="(option, index) in animations" :value="option.value" :key="index">
@@ -23,7 +23,7 @@
                     <input v-model="pause" v-on:click="handleChangePause" class="form-check-input" type="checkbox" role="switch" id="flexBloomPause" checked>
                     <label class="form-check-label text-white" for="flexBloomPause">Pause Data</label>
                 </div>
-            </div>
+            </div> -->
             <div class="input-group mb-2">
                 <div class="form-check form-switch">
                     <input v-model="dimentions" v-on:click="handleChangDimentions" class="form-check-input" type="checkbox" role="switch" id="flexDimentionsSwitch" checked>
@@ -42,7 +42,10 @@
                     <label class="form-check-label text-white" for="flexInteractionSwitch">Click Nodes (performance degrades)</label>
                 </div>
             </div> -->
-            
+            <div class="mt-5">
+                <small class="text-white">ledger queue: {{ pausedRefill.length }}</small>
+                <p class="text-white">renders every {{ this.queue_size }} ledgers</p>
+            </div>
         </div>
         <div class="col ms-5">
             <div class="row text-light">
@@ -91,6 +94,7 @@ export default {
     },
     data() {
         return {
+            queue_size: 50,
             client: undefined,
             network: 'xrpl',
             dimentions: true,
@@ -136,6 +140,8 @@ export default {
         })
 
         // this.graph.forceEngine('ngraph')
+        this.graph.warmupTicks(100)
+        this.graph.cooldownTicks(0)
 
         (document.getElementById('3d-graph'))
             .backgroundColor('rgba(0,0,0,0)')
@@ -172,26 +178,27 @@ export default {
         },
         handleChangePause() {
             if (this.pause) {
-                this.pausedRefill.forEach(ledger_result => {
-                    // console.log('RF', ledger_result)
-                    if ('ledger' in ledger_result && 'transactions' in ledger_result.ledger) {
-                        // console.log('transactions', transactions)
+                this.renderPaused()
+            }            
+        },
+        renderPaused() {
+            this.pausedRefill.forEach(ledger_result => {
+                // console.log('RF', ledger_result)
+                if ('ledger' in ledger_result && 'transactions' in ledger_result.ledger) {
+                    // console.log('transactions', transactions)
 
-                        for (let i = 0; i < ledger_result.ledger.transactions.length; i++) {
-                            const transaction = ledger_result.ledger.transactions[i]
-                            this.handelTx(transaction)
-                        }
+                    for (let i = 0; i < ledger_result.ledger.transactions.length; i++) {
+                        const transaction = ledger_result.ledger.transactions[i]
+                        this.handelTx(transaction)
                     }
-                    this.ledgers++
-                })
-                this.graph.graphData({
-                    nodes: this.nodes,
-                    links: this.links
-                })
-                this.pausedRefill = []
-            }
-
-            
+                }
+                this.ledgers++
+            })
+            this.graph.graphData({
+                nodes: this.nodes,
+                links: this.links
+            })
+            this.pausedRefill = []
         },
         handleChangeAnimation(event) {
             this.graph.cooldownTime(this.animation)
@@ -310,25 +317,26 @@ export default {
                 console.log('ledger_index', ledger_result.ledger.ledger_index)
                 this.ledger = ledger_result.ledger.ledger_index
 
-                if (this.pause) { 
-                    this.pausedRefill.push(ledger_result)
+                this.pausedRefill.push(ledger_result)
+                if (this.pausedRefill.length % this.queue_size === 0) { 
+                    this.renderPaused()
                     return 
                 }
-                if ('ledger' in ledger_result && 'transactions' in ledger_result.ledger) {
-                    // console.log('transactions', transactions)
+                // if ('ledger' in ledger_result && 'transactions' in ledger_result.ledger) {
+                //     // console.log('transactions', transactions)
 
-                    for (let i = 0; i < ledger_result.ledger.transactions.length; i++) {
-                        const transaction = ledger_result.ledger.transactions[i]
+                //     for (let i = 0; i < ledger_result.ledger.transactions.length; i++) {
+                //         const transaction = ledger_result.ledger.transactions[i]
                         
-                        this.handelTx(transaction)
-                    }
-                }
+                //         this.handelTx(transaction)
+                //     }
+                // }
 
-                this.graph.graphData({
-                    nodes: this.nodes,
-                    links: this.links
-                })
-                this.ledgers++
+                // this.graph.graphData({
+                //     nodes: this.nodes,
+                //     links: this.links
+                // })
+                // this.ledgers++
             }
 
             this.client.on('ledger', callback)
