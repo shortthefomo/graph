@@ -2,7 +2,7 @@
     
     <div class="row">
         <div class="col ms-5 mt-5">
-            <div class="input-group mb-2 mt-5">
+            <div class="input-group mb-2">
                 <span class="input-group-text">Network</span>
                 <select v-model="network" v-on:change="handleChangeNetwork($event)">
                     <option v-for="(option, index) in networks" :value="option.value" :key="index">
@@ -10,15 +10,15 @@
                     </option>
                 </select>
             </div>
-            <!-- <div class="input-group mb-2">
-                <span class="input-group-text">Animate</span>
-                <select v-model="animation" v-on:change="handleChangeAnimation($event)">
-                    <option v-for="(option, index) in animations" :value="option.value" :key="index">
+            <div class="input-group mb-2">
+                <span class="input-group-text">Ledgers</span>
+                <select v-model="range">
+                    <option v-for="(option, index) in ranges" :value="option.value" :key="index">
                         {{ option.label }}
                     </option>
                 </select>
             </div>
-            <div class="input-group mb-2">
+            <!-- div class="input-group mb-2">
                 <div class="form-check form-switch">
                     <input v-model="pause" v-on:click="handleChangePause" class="form-check-input" type="checkbox" role="switch" id="flexBloomPause" checked>
                     <label class="form-check-label text-white" for="flexBloomPause">Pause Data</label>
@@ -42,12 +42,11 @@
                     <label class="form-check-label text-white" for="flexInteractionSwitch">Click Nodes (performance degrades)</label>
                 </div>
             </div> -->
-            <div class="mt-5">
-                <small class="text-white">ledger queue: {{ pausedRefill.length }}</small>
-                <p class="text-white">renders every {{ this.queue_size }} ledgers</p>
+
+            <div class="input-group mb-5 text-white">
+                <button type="button" class="btn btn-primary" v-on:click="handleFetch" :disabled="ledger === undefined || loading">Render</button>
             </div>
-        </div>
-        <div class="col ms-5">
+            
             <div class="row text-light">
                 <p><i class="bi bi-circle-fill" style="color: #FF1A8B;"></i> AMM</p>
             </div>
@@ -70,7 +69,7 @@
     </div>
 
     
-    <div class="row"><div class="col text-center"><h1>{{ ledger }}</h1><small class="text-white">accounts renderered: {{ Object.keys(this.accounts).length }}</small> <small class="text-white">ledgers: {{ ledgers }}</small></div></div>
+    <div class="row"><div class="col text-center"><h1 v-if="rendered_label === undefined">{{ ledger }}</h1> <h1 v-if="rendered_label !== undefined">{{ rendered_label }}</h1><small class="text-white">accounts renderered: {{ Object.keys(this.accounts).length }}</small> <small class="text-white">ledgers: {{ ledgers }}</small></div></div>
     <div id="3d-graph"></div>
 </template>
 
@@ -79,7 +78,6 @@ import pathParser from 'xrpl-tx-path-parser'
 import ForceGraph3D from '3d-force-graph'
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js'
 import { GlitchPass } from 'three/examples/jsm/postprocessing/GlitchPass.js'
-import { forEach } from 'lodash'
 
 
 const glitchPass = new GlitchPass(64)
@@ -94,17 +92,22 @@ export default {
     },
     data() {
         return {
+            rendered_label: undefined,
+            reset: false,
             queue_size: 50,
             client: undefined,
             network: 'xrpl',
             dimentions: true,
             bloom_show: true,
             animation: 1200,
-            animations: [
-                { label: '200ms', value: 200 },
-                { label: '800ms', value: 800 },
-                { label: '1200ms', value: 1200 },
-                { label: 'Infinity', value: Infinity },
+            range: 10,
+            ranges: [
+                { label: '10', value: 10 },
+                { label: '50', value: 50 },
+                { label: '100', value: 100 },
+                { label: '200', value: 200 },
+                { label: '400', value: 400 },
+                { label: '500', value: 500 },
             ],
             interaction: true,
             networks: [
@@ -119,6 +122,7 @@ export default {
             links: [],
             ledgers: 0,
             pause: false,
+            loading: false,
             pausedRefill: [],
             ignored: [
                // 'rxRpSNb1VktvzBz8JF2oJC6qaww6RZ7Lw'
@@ -133,27 +137,29 @@ export default {
         
         this.$store.dispatch('clientConnect',  { network: this.network, force: false })
         await this.connect()
-
-        
-        this.graph = ForceGraph3D({
-            controlType: 'trackball'// fly
-        })
-
-        // this.graph.forceEngine('ngraph')
-        this.graph.warmupTicks(100)
-        this.graph.cooldownTicks(0)
-
-        (document.getElementById('3d-graph'))
-            .backgroundColor('rgba(0,0,0,0)')
-            .graphData({nodes: this.nodes, links: this.links})
-            .nodeLabel('id')
-            .nodeVal('size')
-            .enableNodeDrag(false)
-            .onNodeClick(node => window.open((this.network === 'xrpl') ? `https://livenet.xrpl.org/transactions/${node.hash}`:`https://xahau.xrpl.org/transactions/${node.hash}`, '_blank'))
-        
-        this.graph.postProcessingComposer().addPass(bloomPass)
+        this.init()
     },
     methods: {
+        async init() {
+            this.graph = undefined
+            this.graph = ForceGraph3D({
+                controlType: 'trackball'// fly
+            })
+
+            // this.graph.forceEngine('ngraph')
+            this.graph.warmupTicks(100)
+            this.graph.cooldownTicks(0)
+
+            (document.getElementById('3d-graph'))
+                .backgroundColor('rgba(0,0,0,0)')
+                .graphData({nodes: this.nodes, links: this.links})
+                .nodeLabel('id')
+                .nodeVal('size')
+                .enableNodeDrag(false)
+                .onNodeClick(node => window.open((this.network === 'xrpl') ? `https://livenet.xrpl.org/transactions/${node.hash}`:`https://xahau.xrpl.org/transactions/${node.hash}`, '_blank'))
+            
+            this.graph.postProcessingComposer().addPass(bloomPass)
+        },
         handleChangeBloom() {
             if (!this.bloom_show) {
                 this.graph.postProcessingComposer().addPass(bloomPass)
@@ -199,9 +205,6 @@ export default {
                 links: this.links
             })
             this.pausedRefill = []
-        },
-        handleChangeAnimation(event) {
-            this.graph.cooldownTime(this.animation)
         },
         handleChangDimentions() {
             (!this.dimentions) ? this.graph.numDimensions(3) : this.graph.numDimensions(2)
@@ -270,6 +273,22 @@ export default {
                 console.log('other', transaction)
             }
         },
+        async handleFetch() {
+            this.rendered_label = undefined
+            this.loading = true
+            this.ledgers = 0
+            this.nodes = []
+            this.links = []
+            this.accounts = {}
+            this.graph.graphData({
+                nodes: this.nodes,
+                links: this.links
+            })
+            this.pausedRefill = []
+            await this.fetchLedgers(this.range)
+            this.rendered_label = (this.ledger - this.range) + ' - ' + this.ledger
+            this.loading = false
+        },
         async connect() {
             if (this.client !== undefined) {
                 this.client.close()
@@ -295,6 +314,50 @@ export default {
             // await this.accountTX('rfKsmLP6sTfVGDvga6rW6XbmSFUzc3G9f3')
             
         },
+        async fetchLedgers(range) {
+            let index = this.ledger
+            console.log('fetching fetchLedgers', index, range)
+            let count = 1
+            while (count <= range) {
+                await this.fetchLedger(index)
+                index--
+                count++
+            }
+
+            this.pausedRefill.forEach(ledger_result => {
+                console.log('RF', ledger_result)
+                if ('ledger' in ledger_result && 'transactions' in ledger_result.ledger) {
+                    // console.log('transactions', transactions)
+
+                    for (let i = 0; i < ledger_result.ledger.transactions.length; i++) {
+                        const transaction = ledger_result.ledger.transactions[i]
+                        this.handelTx(transaction)
+                    }
+                }
+                this.ledgers++
+            })
+            this.graph.graphData({
+                nodes: this.nodes,
+                links: this.links
+            })
+            this.pausedRefill = []
+        },
+        async fetchLedger(index) {
+            console.log('fetching ledger', index)
+            let request = {
+                'id': 'xrpl-local',
+                'command': 'ledger',
+                'ledger_index': index,
+                'transactions': true,
+                'expand': true,
+                'owner_funds': true
+            }
+            this.client = this.$store.getters.getClient(this.network)
+            const ledger_result = await this.client.send(request)
+            // console.log('ledger_result', ledger_result)
+            if ('error' in ledger_result) { return }
+            this.pausedRefill.push(ledger_result)
+        },
         async ledgerClose() {
             this.client = this.$store.getters.getClient(this.network)
             console.log(await this.client.send({'command': 'server_info'}))
@@ -315,13 +378,16 @@ export default {
 
                 
                 console.log('ledger_index', ledger_result.ledger.ledger_index)
+                
                 this.ledger = ledger_result.ledger.ledger_index
+                
+                
 
-                this.pausedRefill.push(ledger_result)
-                if (this.pausedRefill.length % this.queue_size === 0) { 
-                    this.renderPaused()
-                    return 
-                }
+                // this.pausedRefill.push(ledger_result)
+                // if (this.pausedRefill.length % this.queue_size === 0) { 
+                //     this.renderPaused()
+                //     return 
+                // }
                 // if ('ledger' in ledger_result && 'transactions' in ledger_result.ledger) {
                 //     // console.log('transactions', transactions)
 
