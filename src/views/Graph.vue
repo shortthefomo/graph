@@ -44,7 +44,7 @@
             </div> -->
 
             <div class="input-group mb-5 text-white">
-                <button type="button" class="btn btn-primary" v-on:click="handleFetch" :disabled="ledger === undefined || loading">Render</button>
+                <button type="button" class="btn btn-primary" v-on:click="handleFetch" :disabled="ledger === undefined || loading">{{ loading ? 'Rendering':'Render'}}</button>
             </div>
             
             <div class="row text-light">
