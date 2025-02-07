@@ -77,10 +77,10 @@
 import pathParser from 'xrpl-tx-path-parser'
 import ForceGraph3D from '3d-force-graph'
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js'
-import { GlitchPass } from 'three/examples/jsm/postprocessing/GlitchPass.js'
+// import { GlitchPass } from 'three/examples/jsm/postprocessing/GlitchPass.js'
 
 
-const glitchPass = new GlitchPass(64)
+// const glitchPass = new GlitchPass(64)
 const bloomPass = new UnrealBloomPass()
 bloomPass.strength = 2
 bloomPass.radius = 1
@@ -231,51 +231,55 @@ export default {
             })
         },
         handelTx(transaction) {
-            if (transaction.TransactionType === 'Payment') {
-                this.graphPayment(transaction)
-            }
-            else if (transaction.TransactionType === 'OfferCreate') {
-                this.graphOfferCreate(transaction)
-            }
-            else if (transaction.TransactionType === 'OfferCancel') {
-            
-            }
-            else if (transaction.TransactionType === 'TrustSet') {
-                // console.log('TrustSet', transaction)
-                this.graphTrustSet(transaction)
-            }
-            else if (transaction.TransactionType === 'AMMDeposit') {
-                this.graphAMMDeposit(transaction)
-                // console.log('AMMDeposit', transaction)
-            }
-            else if (transaction.TransactionType === 'AMMWithdraw') {
-                this.graphAMMWithdraw(transaction)
-                // console.log('AMMWithdraw', transaction)
-            }
-            else if (transaction.TransactionType === 'AMMBid') {
-                this.graphAMMBid(transaction)
-                // console.log('AMMBid', transaction)
-            }
-            else if (transaction.TransactionType === 'NFTokenCreateOffer') {
-                this.graphNFTokenCreateOffer(transaction)
-                // console.log('NFTokenCreateOffer', transaction)
-            }
-            else if (transaction.TransactionType === 'NFTokenCancelOffer') {
-                // do nothing
-            }
-            else if (transaction.TransactionType === 'NFTokenAcceptOffer') {
-                this.graphNFTokenAcceptOffer(transaction)
-                // console.log('NFTokenAcceptOffer', transaction)
-            }
-            else if (transaction.TransactionType === 'OracleSet') {
-                // do nothing
-            }
-            else if (transaction.TransactionType === 'TicketCreate') {
-                // do nothing
-            }
-            else {
-                console.log('type', transaction.TransactionType)
-                console.log('other', transaction)
+            try {
+                if (transaction.TransactionType === 'Payment') {
+                    this.graphPayment(transaction)
+                }
+                else if (transaction.TransactionType === 'OfferCreate') {
+                    this.graphOfferCreate(transaction)
+                }
+                else if (transaction.TransactionType === 'OfferCancel') {
+                
+                }
+                else if (transaction.TransactionType === 'TrustSet') {
+                    // console.log('TrustSet', transaction)
+                    this.graphTrustSet(transaction)
+                }
+                else if (transaction.TransactionType === 'AMMDeposit') {
+                    this.graphAMMDeposit(transaction)
+                    // console.log('AMMDeposit', transaction)
+                }
+                else if (transaction.TransactionType === 'AMMWithdraw') {
+                    this.graphAMMWithdraw(transaction)
+                    // console.log('AMMWithdraw', transaction)
+                }
+                else if (transaction.TransactionType === 'AMMBid') {
+                    this.graphAMMBid(transaction)
+                    // console.log('AMMBid', transaction)
+                }
+                else if (transaction.TransactionType === 'NFTokenCreateOffer') {
+                    this.graphNFTokenCreateOffer(transaction)
+                    // console.log('NFTokenCreateOffer', transaction)
+                }
+                else if (transaction.TransactionType === 'NFTokenCancelOffer') {
+                    // do nothing
+                }
+                else if (transaction.TransactionType === 'NFTokenAcceptOffer') {
+                    this.graphNFTokenAcceptOffer(transaction)
+                    // console.log('NFTokenAcceptOffer', transaction)
+                }
+                else if (transaction.TransactionType === 'OracleSet') {
+                    // do nothing
+                }
+                else if (transaction.TransactionType === 'TicketCreate') {
+                    // do nothing
+                }
+                else {
+                    console.log('type', transaction.TransactionType)
+                    console.log('other', transaction)
+                }
+            } catch (error) {
+                
             }
         },
         async handleFetch() {
