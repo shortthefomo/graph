@@ -24,6 +24,15 @@
                     <label class="form-check-label text-white" for="flexBloomPause">Pause Data</label>
                 </div>
             </div> -->
+            <!-- <div class="col-2">
+                <div class="input-group mb-2 text-light">
+                    
+                    <input v-model="fixed_index" type="email" class="form-control" id="fixedIndex" aria-describedby="fixedIndex">
+                    <label for="fixedIndex" class="form-label ms-2">Ledger Index (optional)</label>
+                </div>
+            </div> -->
+            
+            
             <div class="input-group mb-2">
                 <div class="form-check form-switch">
                     <input v-model="dimentions" v-on:click="handleChangDimentions" class="form-check-input" type="checkbox" role="switch" id="flexDimentionsSwitch" checked>
@@ -92,6 +101,7 @@ export default {
     },
     data() {
         return {
+            fixed_index: undefined,
             rendered_label: undefined,
             reset: false,
             queue_size: 50,
@@ -295,7 +305,8 @@ export default {
             })
             this.pausedRefill = []
             await this.fetchLedgers(this.range)
-            this.rendered_label = (this.ledger - this.range) + ' - ' + this.ledger
+            const index = this.fixed_index === undefined ? this.ledger : this.fixed_index
+            this.rendered_label = (index - this.range) + ' - ' + index
             this.loading = false
         },
         async connect() {
@@ -324,7 +335,8 @@ export default {
             
         },
         async fetchLedgers(range) {
-            let index = this.ledger
+            
+            let index = this.fixed_index === undefined ? this.ledger : this.fixed_index
             console.log('fetching fetchLedgers', index, range)
             let count = 1
             while (count <= range) {
@@ -596,70 +608,74 @@ export default {
             if (value < 1_000_000_000) { return 500 }
         },
         graphData(data, transaction, type = undefined) {
-            for (let index = 0; index < data.accountBalanceChanges.length; index++) {
-                let value = 0
-                const element = data.accountBalanceChanges[index]
+            try {
+                for (let index = 0; index < data.accountBalanceChanges.length; index++) {
+                    let value = 0
+                    const element = data.accountBalanceChanges[index]
 
-                //size elements
-                
-                element.balances.forEach(bal => {
-                    if (bal.currency === 'XRP') {
-                        value = Math.abs(Number(bal.value))
+                    //size elements
+                    
+                    element.balances.forEach(bal => {
+                        if (bal.currency === 'XRP') {
+                            value = Math.abs(Number(bal.value))
+                        }
+                    })
+
+                    if (this.ignored.includes(element.account)) { continue }
+                    
+                    const group = type !== undefined ? type: element.isAMM ? 'AMM': element.isOffer ? 'DEX' : element.isDirect? 'DIRECT' : 'RIPPLING'
+                    // bit complicated here as there is a bug in .isOffer
+                    let color
+                    if (type === 'DEX') {
+                        color = element.isAMM ? '#FF1A8B': '#00E56a'
                     }
-                })
-
-                if (this.ignored.includes(element.account)) { continue }
-                
-                const group = type !== undefined ? type: element.isAMM ? 'AMM': element.isOffer ? 'DEX' : element.isDirect? 'DIRECT' : 'RIPPLING'
-                // bit complicated here as there is a bug in .isOffer
-                let color
-                if (type === 'DEX') {
-                    color = element.isAMM ? '#FF1A8B': '#00E56a'
-                }
-                else {
-                    color = element.isAMM ? '#FF1A8B': element.isOffer ? '#00E56a' : element.isDirect? '#974CFF' : '#FFFFFF'
-                }
-                // find teleport.
-                if (element.account === 'rTeLeproT3BVgjWoYrDYpKbBLXPaVMkge') {
-                    color = '#ffa500'
-                }
-                if (element.account === 'rEVRTELEpb16FQSGgK8GRJGy9ChviquddK') {
-                    color = '#ffa500'
-                }
-                // corium bridge
-                if (element.account === 'rxXXXeMX8Gy5YvibvGLnQJ1XKKD7UswM1') {
-                    color = '#ffa500'
-                }
-
-                if (this.accounts[element.account] === undefined) {
-                    this.accounts[element.account] = {
-                        account: element.account
+                    else {
+                        color = element.isAMM ? '#FF1A8B': element.isOffer ? '#00E56a' : element.isDirect? '#974CFF' : '#FFFFFF'
+                    }
+                    // find teleport.
+                    if (element.account === 'rTeLeproT3BVgjWoYrDYpKbBLXPaVMkge') {
+                        color = '#ffa500'
+                    }
+                    if (element.account === 'rEVRTELEpb16FQSGgK8GRJGy9ChviquddK') {
+                        color = '#ffa500'
+                    }
+                    // corium bridge
+                    if (element.account === 'rxXXXeMX8Gy5YvibvGLnQJ1XKKD7UswM1') {
+                        color = '#ffa500'
                     }
 
-                    this.nodes.push({ id: element.account, group, color, hash: transaction.hash, size: this.scaleValue(value) })
-                }
-                else {
-                    // update colors to the latest other wise.
-                    for (let index = 0; index < this.nodes.length; index++) {
-                        const node = this.nodes[index]
-                        if (node.id !== element.account) { continue }
-                        if (node.color !== color && node.group !== 'amm') {
-                            // console.log('color changed', element.account, node.color, color)
-                            node.color = color
+                    if (this.accounts[element.account] === undefined) {
+                        this.accounts[element.account] = {
+                            account: element.account
                         }
-                        if (value !== 0 && this.nodes[index].size !== undefined) {
-                            this.nodes[index].size = this.scaleValue(value)
+
+                        this.nodes.push({ id: element.account, group, color, hash: transaction.hash, size: this.scaleValue(value) })
+                    }
+                    else {
+                        // update colors to the latest other wise.
+                        for (let index = 0; index < this.nodes.length; index++) {
+                            const node = this.nodes[index]
+                            if (node.id !== element.account) { continue }
+                            if (node.color !== color && node.group !== 'amm') {
+                                // console.log('color changed', element.account, node.color, color)
+                                node.color = color
+                            }
+                            if (value !== 0 && this.nodes[index].size !== undefined) {
+                                this.nodes[index].size = this.scaleValue(value)
+                            }
+                            if (this.nodes[index].size !== undefined) {
+                                this.nodes[index].size = this.scaleValue(value)
+                            }
+                            
                         }
-                        if (this.nodes[index].size !== undefined) {
-                            this.nodes[index].size = this.scaleValue(value)
-                        }
-                        
+                    }
+
+                    if (data.sourceAccount !== element.account) {
+                        this.links.push({ source: data.sourceAccount, target: element.account, group })        
                     }
                 }
+            } catch (e) {
 
-                if (data.sourceAccount !== element.account) {
-                    this.links.push({ source: data.sourceAccount, target: element.account, group })        
-                }
             }
         },
         async accountTX(wallet) {
