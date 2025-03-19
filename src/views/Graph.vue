@@ -605,6 +605,16 @@ export default {
             this.nodes.push({ id: transaction.Account, group: 'Import', color: '#FF1A8B', hash: transaction.hash, size: 1 })
             this.nodes.push({ id: transaction.Destination, group: 'Import', color: '#FF1A8B', hash: transaction.hash, size: 1 })
             this.links.push({ source: transaction.Account, target: transaction.Destination, group: 'Import' })
+            if (this.accounts[transaction.Account] === undefined) {
+                this.accounts[transaction.Account] = {
+                    account: transaction.Account
+                }
+            }
+            if (this.accounts[transaction.Destination] === undefined) {
+                this.accounts[transaction.Destination] = {
+                    account: transaction.Destination
+                }
+            }
 
         },
         graphRemit(transaction) {
@@ -612,6 +622,16 @@ export default {
             this.nodes.push({ id: transaction.Account, group: 'NFT', color: '#FFFF00', hash: transaction.hash, size: 1 })
             this.nodes.push({ id: transaction.Destination, group: 'NFT', color: '#FFFF00', hash: transaction.hash, size: 1 })
             this.links.push({ source: transaction.Account, target: transaction.Destination, group: 'NFT' })
+            if (this.accounts[transaction.Account] === undefined) {
+                this.accounts[transaction.Account] = {
+                    account: transaction.Account
+                }
+            }
+            if (this.accounts[transaction.Destination] === undefined) {
+                this.accounts[transaction.Destination] = {
+                    account: transaction.Destination
+                }
+            }
 
         },
         graphInvoke(transaction) {
@@ -619,6 +639,16 @@ export default {
             this.nodes.push({ id: transaction.Account, group: 'Invoke', color: '#FFA500', hash: transaction.hash, size: 1 })
             this.nodes.push({ id: transaction.Destination, group: 'Invoke', color: '#FFA500', hash: transaction.hash, size: 1 })
             this.links.push({ source: transaction.Account, target: transaction.Destination, group: 'Invoke' })
+            if (this.accounts[transaction.Account] === undefined) {
+                this.accounts[transaction.Account] = {
+                    account: transaction.Account
+                }
+            }
+            if (this.accounts[transaction.Destination] === undefined) {
+                this.accounts[transaction.Destination] = {
+                    account: transaction.Destination
+                }
+            }
         },
         graphURITokenMint(transaction) {
             console.log('graphURITokenMint', transaction)
@@ -632,7 +662,17 @@ export default {
                 if (Other === undefined) { continue }
                 this.nodes.push({ id: Other, group: 'Invoke', color: '#FFA500', hash: transaction.hash, size: 1 })
                 this.links.push({ source: Other, target: transaction.Account, group: 'Invoke' })
-            }            
+            }
+            if (this.accounts[transaction.Account] === undefined) {
+                this.accounts[transaction.Account] = {
+                    account: transaction.Account
+                }
+            }
+            if (this.accounts[Other] === undefined) {
+                this.accounts[Other] = {
+                    account: Other
+                }
+            }
         },
         graphURITokenBuy(transaction) {
             console.log('graphURITokenBuy', transaction)
@@ -647,7 +687,16 @@ export default {
                 this.nodes.push({ id: Buyer, group: 'NFT', color: '#FFFF00', hash: transaction.hash, size: 1 })
                 this.links.push({ source: Buyer, target: transaction.Account, group: 'NFT' })
             }
-
+            if (this.accounts[transaction.Account] === undefined) {
+                this.accounts[transaction.Account] = {
+                    account: transaction.Account
+                }
+            }
+            if (this.accounts[Buyer] === undefined) {
+                this.accounts[Buyer] = {
+                    account: Buyer
+                }
+            }
         },
         graphNFTokenAcceptOffer(transaction) {
             console.log('graphNFTokenAcceptOffer', transaction)
