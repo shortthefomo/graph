@@ -253,6 +253,9 @@ export default {
         },
         handelTx(transaction) {
             try {
+                let meta = transaction.metaData || transaction.meta
+                if (meta.TransactionResult !== 'tesSUCCESS') { return }
+
                 if (transaction.TransactionType === 'Payment') {
                     this.graphPayment(transaction)
                 }
@@ -313,6 +316,13 @@ export default {
                 else if (transaction.TransactionType === 'URITokenBurn') {
                     // do nothing
                 }
+                else if (transaction.TransactionType === 'AccountSet') {
+                    // do nothing
+                }
+                else if (transaction.TransactionType === 'UNLReport') {
+                    // do nothing
+                }
+                
                 else {
                     console.log('type', transaction.TransactionType)
                     console.log('other', transaction)
@@ -587,41 +597,58 @@ export default {
             }
         },
         graphImport(transaction) {
-            // console.log('Import')
-            // console.log(transaction)
+            console.log('Import')
+            console.log(transaction)
             this.nodes.push({ id: transaction.Account, group: 'Import', color: '#FF1A8B', hash: transaction.hash, size: 1 })
             this.nodes.push({ id: transaction.Destination, group: 'Import', color: '#FF1A8B', hash: transaction.hash, size: 1 })
             this.links.push({ source: transaction.Account, target: transaction.Destination, group: 'Import' })
 
         },
         graphRemit(transaction) {
-            // console.log('Remit')
-            // console.log(transaction)
+            console.log('Remit')
+            console.log(transaction)
             this.nodes.push({ id: transaction.Account, group: 'NFT', color: '#FFFF00', hash: transaction.hash, size: 1 })
             this.nodes.push({ id: transaction.Destination, group: 'NFT', color: '#FFFF00', hash: transaction.hash, size: 1 })
             this.links.push({ source: transaction.Account, target: transaction.Destination, group: 'NFT' })
 
         },
         graphInvoke(transaction) {
-            // console.log('graphInvoke')
-            // console.log(transaction)
+            let Other
+            console.log('graphInvoke')
+            console.log(transaction)
             this.nodes.push({ id: transaction.Account, group: 'Invoke', color: '#FFA500', hash: transaction.hash, size: 1 })
             this.nodes.push({ id: transaction.Destination, group: 'Invoke', color: '#FFA500', hash: transaction.hash, size: 1 })
             this.links.push({ source: transaction.Account, target: transaction.Destination, group: 'Invoke' })
         },
         graphURITokenMint(transaction) {
-            // console.log('graphInvoke')
-            // console.log(transaction)
+            console.log('graphURITokenMint')
+            console.log(transaction)
             this.nodes.push({ id: transaction.Account, group: 'NFT', color: '#FFFF00', hash: transaction.hash, size: 1 })
+
+            for (let index = 0; index < meta.AffectedNodes.length; index++) {
+                const nodes = meta.AffectedNodes[index]
+                if (nodes.DeletedNode === undefined) { continue }
+                if (nodes.LedgerEntryType !== 'AccountRoot') { continue }
+                Other = nodes.FinalFields.RegularKey
+                if (Other === undefined) { continue }
+                this.nodes.push({ id: Other, group: 'Invoke', color: '#FFA500', hash: transaction.hash, size: 1 })
+                this.links.push({ source: Other, target: transaction.Account, group: 'Invoke' })
+            }
+
+
+            
             this.nodes.push({ id: transaction.Destination, group: 'NFT', color: '#FFFF00', hash: transaction.hash, size: 1 })
             this.links.push({ source: transaction.Account, target: transaction.Destination, group: 'NFT' })
         },
         graphURITokenBuy(transaction) {
+            console.log('graphURITokenBuy')
+            console.log(transaction)
+
+            let Buyer
             this.nodes.push({ id: transaction.Account, group: 'NFT', color: '#FFFF00', hash: transaction.hash, size: 1 })
             let meta = transaction.metaData || transaction.meta
             for (let index = 0; index < meta.AffectedNodes.length; index++) {
                 const nodes = meta.AffectedNodes[index]
-                if (nodes.DeletedNode === undefined) { continue }
                 if (nodes.LedgerEntryType !== 'URIToken') { continue }
                 Buyer = nodes.FinalFields.Issuer
                 this.nodes.push({ id: Buyer, group: 'NFT', color: '#FFFF00', hash: transaction.hash, size: 1 })
