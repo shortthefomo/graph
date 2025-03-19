@@ -591,6 +591,7 @@ export default {
             // console.log(transaction)
             this.nodes.push({ id: transaction.Account, group: 'Import', color: '#FF1A8B', hash: transaction.hash, size: 1 })
             this.nodes.push({ id: transaction.Destination, group: 'Import', color: '#FF1A8B', hash: transaction.hash, size: 1 })
+            this.links.push({ source: transaction.Account, target: transaction.Destination, group: 'Import' })
 
         },
         graphRemit(transaction) {
@@ -598,21 +599,22 @@ export default {
             // console.log(transaction)
             this.nodes.push({ id: transaction.Account, group: 'NFT', color: '#FFFF00', hash: transaction.hash, size: 1 })
             this.nodes.push({ id: transaction.Destination, group: 'NFT', color: '#FFFF00', hash: transaction.hash, size: 1 })
+            this.links.push({ source: transaction.Account, target: transaction.Destination, group: 'NFT' })
 
         },
         graphInvoke(transaction) {
-            console.log('graphInvoke')
-            console.log(transaction)
+            // console.log('graphInvoke')
+            // console.log(transaction)
             this.nodes.push({ id: transaction.Account, group: 'Invoke', color: '#FFA500', hash: transaction.hash, size: 1 })
             this.nodes.push({ id: transaction.Destination, group: 'Invoke', color: '#FFA500', hash: transaction.hash, size: 1 })
-
+            this.links.push({ source: transaction.Account, target: transaction.Destination, group: 'Invoke' })
         },
         graphURITokenMint(transaction) {
             // console.log('graphInvoke')
             // console.log(transaction)
             this.nodes.push({ id: transaction.Account, group: 'NFT', color: '#FFFF00', hash: transaction.hash, size: 1 })
             this.nodes.push({ id: transaction.Destination, group: 'NFT', color: '#FFFF00', hash: transaction.hash, size: 1 })
-
+            this.links.push({ source: transaction.Account, target: transaction.Destination, group: 'NFT' })
         },
         graphURITokenBuy(transaction) {
             this.nodes.push({ id: transaction.Account, group: 'NFT', color: '#FFFF00', hash: transaction.hash, size: 1 })
@@ -745,7 +747,7 @@ export default {
                 }
 
                 if (data.sourceAccount !== element.account) {
-                    this.links.push({ source: data.sourceAccount, target: element.account, group })        
+                    this.links.push({ source: data.sourceAccount, target: element.account, group })
                 }
             }
         },
