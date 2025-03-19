@@ -56,9 +56,14 @@
                 <button type="button" class="btn btn-primary" v-on:click="handleFetch" :disabled="ledger === undefined || loading">{{ loading ? 'Rendering':'Render'}}</button>
             </div>
             
-            <div class="row text-light">
+            <div v-if="network === 'xrpl'" class="row text-light">
                 <p><i class="bi bi-circle-fill" style="color: #FF1A8B;"></i> AMM</p>
             </div>
+
+            <div v-if="network === 'xahau'" class="row text-light">
+                <p><i class="bi bi-circle-fill" style="color: #FF1A8B;"></i> Import</p>
+            </div>
+            
             <div class="row text-light">
                 <p><i class="bi bi-circle-fill" style="color: #00E56a;"></i> DEX Trade</p>
             </div>
@@ -71,8 +76,14 @@
             <div class="row text-light">
                 <p><i class="bi bi-circle-fill" style="color: #00FFFF;"></i> TrustSet</p>
             </div>
-            <div class="row text-light">
+            <div v-if="network === 'xrpl'" class="row text-light">
                 <p><i class="bi bi-circle-fill" style="color: #FFFF00;"></i> NFT</p>
+            </div>
+            <div v-if="network === 'xahau'" class="row text-light">
+                <p><i class="bi bi-circle-fill" style="color: #FFFF00;"></i> URIToken, Remit</p>
+            </div>
+            <div v-if="network === 'xahau'" class="row text-light">
+                <p><i class="bi bi-circle-fill" style="color: #FFA500;"></i> Invoke</p>
             </div>
         </div>
     </div>
@@ -267,15 +278,27 @@ export default {
                     this.graphAMMBid(transaction)
                     // console.log('AMMBid', transaction)
                 }
-                else if (transaction.TransactionType === 'NFTokenCreateOffer') {
+                else if (transaction.TransactionType === 'NFTokenCreateOffer' || transaction.TransactionType === 'URITokenCreateSellOffer') {
                     this.graphNFTokenCreateOffer(transaction)
                     // console.log('NFTokenCreateOffer', transaction)
                 }
-                else if (transaction.TransactionType === 'NFTokenCancelOffer') {
+                else if (transaction.TransactionType === 'NFTokenCancelOffer' || transaction.TransactionType === 'URITokenCancelSellOffer') {
                     // do nothing
                 }
                 else if (transaction.TransactionType === 'NFTokenAcceptOffer') {
                     this.graphNFTokenAcceptOffer(transaction)
+                    // console.log('NFTokenAcceptOffer', transaction)
+                }
+                else if (transaction.TransactionType === 'URITokenBuy') {
+                    this.graphURITokenBuy(transaction)
+                    // console.log('NFTokenAcceptOffer', transaction)
+                }
+                else if (transaction.TransactionType === 'URITokenMint') {
+                    this.graphURITokenMint(transaction)
+                    // console.log('NFTokenAcceptOffer', transaction)
+                }
+                else if (transaction.TransactionType === 'Import') {
+                    this.graphImport(transaction)
                     // console.log('NFTokenAcceptOffer', transaction)
                 }
                 else if (transaction.TransactionType === 'OracleSet') {
@@ -284,12 +307,18 @@ export default {
                 else if (transaction.TransactionType === 'TicketCreate') {
                     // do nothing
                 }
+                else if (transaction.TransactionType === 'Invoke') {
+                    this.graphInvoke(transaction)
+                }
+                else if (transaction.TransactionType === 'URITokenBurn') {
+                    // do nothing
+                }
                 else {
                     console.log('type', transaction.TransactionType)
                     console.log('other', transaction)
                 }
             } catch (error) {
-                
+                console.log('this now fired')
             }
         },
         async handleFetch() {
@@ -357,10 +386,15 @@ export default {
                 }
                 this.ledgers++
             })
-            this.graph.graphData({
-                nodes: this.nodes,
-                links: this.links
-            })
+            try {
+                this.graph.graphData({
+                    nodes: this.nodes,
+                    links: this.links
+                })
+            } catch(e) {
+                console.log('hit this....')
+            }
+            
             this.pausedRefill = []
         },
         async fetchLedger(index) {
@@ -459,6 +493,7 @@ export default {
                     account: transaction.LimitAmount.issuer
                 }
             }
+            
             this.nodes.push({ id: transaction.LimitAmount.issuer, group: 'TrustSet', color: '#00FFFF', hash: transaction.hash, size: 1 })
             this.nodes.push({ id: transaction.Account, group: 'TrustSet', color: '#00FFFF', hash: transaction.hash, size: 1 })
             this.links.push({ source: transaction.Account, target: transaction.LimitAmount.issuer, group: 'TrustSet' })
@@ -551,6 +586,46 @@ export default {
                 }
             }
         },
+        graphImport(transaction) {
+            // console.log('Import')
+            // console.log(transaction)
+            this.nodes.push({ id: transaction.Account, group: 'Import', color: '#FF1A8B', hash: transaction.hash, size: 1 })
+            this.nodes.push({ id: transaction.Destination, group: 'Import', color: '#FF1A8B', hash: transaction.hash, size: 1 })
+
+        },
+        graphRemit(transaction) {
+            // console.log('Remit')
+            // console.log(transaction)
+            this.nodes.push({ id: transaction.Account, group: 'NFT', color: '#FFFF00', hash: transaction.hash, size: 1 })
+            this.nodes.push({ id: transaction.Destination, group: 'NFT', color: '#FFFF00', hash: transaction.hash, size: 1 })
+
+        },
+        graphInvoke(transaction) {
+            // console.log('graphInvoke')
+            // console.log(transaction)
+            this.nodes.push({ id: transaction.Account, group: 'Invoke', color: '#FFA500', hash: transaction.hash, size: 1 })
+            this.nodes.push({ id: transaction.Destination, group: 'Invoke', color: '#FFA500', hash: transaction.hash, size: 1 })
+
+        },
+        graphURITokenMint(transaction) {
+            // console.log('graphInvoke')
+            // console.log(transaction)
+            this.nodes.push({ id: transaction.Account, group: 'NFT', color: '#FFA500', hash: transaction.hash, size: 1 })
+            this.nodes.push({ id: transaction.Destination, group: 'NFT', color: '#FFA500', hash: transaction.hash, size: 1 })
+
+        },
+        graphURITokenBuy(transaction) {
+            this.nodes.push({ id: transaction.Account, group: 'NFT', color: '#FFFF00', hash: transaction.hash, size: 1 })
+            let meta = transaction.metaData || transaction.meta
+            for (let index = 0; index < meta.AffectedNodes.length; index++) {
+                const nodes = meta.AffectedNodes[index]
+                if (nodes.DeletedNode === undefined) { continue }
+                if (nodes.LedgerEntryType !== 'URIToken') { continue }
+                Buyer = nodes.FinalFields.Issuer
+                this.nodes.push({ id: Buyer, group: 'NFT', color: '#FFFF00', hash: transaction.hash, size: 1 })
+            }
+
+        },
         graphNFTokenAcceptOffer(transaction) {
             let Buyer
             // console.log('graphNFTokenAcceptOffer', transaction)
@@ -608,74 +683,70 @@ export default {
             if (value < 1_000_000_000) { return 500 }
         },
         graphData(data, transaction, type = undefined) {
-            try {
-                for (let index = 0; index < data.accountBalanceChanges.length; index++) {
-                    let value = 0
-                    const element = data.accountBalanceChanges[index]
+            for (let index = 0; index < data.accountBalanceChanges.length; index++) {
+                let value = 0
+                const element = data.accountBalanceChanges[index]
 
-                    //size elements
-                    
-                    element.balances.forEach(bal => {
-                        if (bal.currency === 'XRP') {
-                            value = Math.abs(Number(bal.value))
+                //size elements
+                
+                element.balances.forEach(bal => {
+                    if (bal.currency === 'XRP') {
+                        value = Math.abs(Number(bal.value))
+                    }
+                })
+
+                if (this.ignored.includes(element.account)) { continue }
+                
+                const group = type !== undefined ? type: element.isAMM ? 'AMM': element.isOffer ? 'DEX' : element.isDirect? 'DIRECT' : 'RIPPLING'
+                // bit complicated here as there is a bug in .isOffer
+                let color
+                if (type === 'DEX') {
+                    color = element.isAMM ? '#FF1A8B': '#00E56a'
+                }
+                else {
+                    color = element.isAMM ? '#FF1A8B': element.isOffer ? '#00E56a' : element.isDirect? '#974CFF' : '#FFFFFF'
+                }
+                // find teleport.
+                if (element.account === 'rTeLeproT3BVgjWoYrDYpKbBLXPaVMkge') {
+                    color = '#ffa500'
+                }
+                if (element.account === 'rEVRTELEpb16FQSGgK8GRJGy9ChviquddK') {
+                    color = '#ffa500'
+                }
+                // corium bridge
+                if (element.account === 'rxXXXeMX8Gy5YvibvGLnQJ1XKKD7UswM1') {
+                    color = '#ffa500'
+                }
+
+                if (this.accounts[element.account] === undefined) {
+                    this.accounts[element.account] = {
+                        account: element.account
+                    }
+
+                    this.nodes.push({ id: element.account, group, color, hash: transaction.hash, size: this.scaleValue(value) })
+                }
+                else {
+                    // update colors to the latest other wise.
+                    for (let index = 0; index < this.nodes.length; index++) {
+                        const node = this.nodes[index]
+                        if (node.id !== element.account) { continue }
+                        if (node.color !== color && node.group !== 'amm') {
+                            // console.log('color changed', element.account, node.color, color)
+                            node.color = color
                         }
-                    })
-
-                    if (this.ignored.includes(element.account)) { continue }
-                    
-                    const group = type !== undefined ? type: element.isAMM ? 'AMM': element.isOffer ? 'DEX' : element.isDirect? 'DIRECT' : 'RIPPLING'
-                    // bit complicated here as there is a bug in .isOffer
-                    let color
-                    if (type === 'DEX') {
-                        color = element.isAMM ? '#FF1A8B': '#00E56a'
-                    }
-                    else {
-                        color = element.isAMM ? '#FF1A8B': element.isOffer ? '#00E56a' : element.isDirect? '#974CFF' : '#FFFFFF'
-                    }
-                    // find teleport.
-                    if (element.account === 'rTeLeproT3BVgjWoYrDYpKbBLXPaVMkge') {
-                        color = '#ffa500'
-                    }
-                    if (element.account === 'rEVRTELEpb16FQSGgK8GRJGy9ChviquddK') {
-                        color = '#ffa500'
-                    }
-                    // corium bridge
-                    if (element.account === 'rxXXXeMX8Gy5YvibvGLnQJ1XKKD7UswM1') {
-                        color = '#ffa500'
-                    }
-
-                    if (this.accounts[element.account] === undefined) {
-                        this.accounts[element.account] = {
-                            account: element.account
+                        if (value !== 0 && this.nodes[index].size !== undefined) {
+                            this.nodes[index].size = this.scaleValue(value)
                         }
-
-                        this.nodes.push({ id: element.account, group, color, hash: transaction.hash, size: this.scaleValue(value) })
-                    }
-                    else {
-                        // update colors to the latest other wise.
-                        for (let index = 0; index < this.nodes.length; index++) {
-                            const node = this.nodes[index]
-                            if (node.id !== element.account) { continue }
-                            if (node.color !== color && node.group !== 'amm') {
-                                // console.log('color changed', element.account, node.color, color)
-                                node.color = color
-                            }
-                            if (value !== 0 && this.nodes[index].size !== undefined) {
-                                this.nodes[index].size = this.scaleValue(value)
-                            }
-                            if (this.nodes[index].size !== undefined) {
-                                this.nodes[index].size = this.scaleValue(value)
-                            }
-                            
+                        if (this.nodes[index].size !== undefined) {
+                            this.nodes[index].size = this.scaleValue(value)
                         }
-                    }
-
-                    if (data.sourceAccount !== element.account) {
-                        this.links.push({ source: data.sourceAccount, target: element.account, group })        
+                        
                     }
                 }
-            } catch (e) {
 
+                if (data.sourceAccount !== element.account) {
+                    this.links.push({ source: data.sourceAccount, target: element.account, group })        
+                }
             }
         },
         async accountTX(wallet) {
