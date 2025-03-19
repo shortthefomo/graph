@@ -121,7 +121,7 @@ export default {
             dimentions: true,
             bloom_show: true,
             animation: 1200,
-            range: 10,
+            range: 25,
             ranges: [
                 { label: '10', value: 10 },
                 { label: '25', value: 25 },
