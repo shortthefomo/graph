@@ -32,7 +32,12 @@
                 </div>
             </div> -->
             
-            
+            <div class="input-group mb-2">
+                <div class="form-check form-switch">
+                    <input v-model="success" v-on:click="handleSucess" class="form-check-input" type="checkbox" role="switch" id="flexSucessSwitch" checked>
+                    <label class="form-check-label text-white" for="flexSucessSwitch">tesSUCCESS</label>
+                </div>
+            </div>
             <div class="input-group mb-2">
                 <div class="form-check form-switch">
                     <input v-model="dimentions" v-on:click="handleChangDimentions" class="form-check-input" type="checkbox" role="switch" id="flexDimentionsSwitch" checked>
@@ -120,6 +125,7 @@ export default {
             network: 'xrpl',
             dimentions: true,
             bloom_show: true,
+            success: true,
             animation: 1200,
             range: 25,
             ranges: [
@@ -229,6 +235,9 @@ export default {
             })
             this.pausedRefill = []
         },
+        handleSucess() {
+            this.success = !this.success
+        },
         handleChangDimentions() {
             (!this.dimentions) ? this.graph.numDimensions(3) : this.graph.numDimensions(2)
         },
@@ -251,7 +260,7 @@ export default {
         handelTx(transaction) {
             try {
                 let meta = transaction.metaData || transaction.meta
-                if (meta.TransactionResult !== 'tesSUCCESS') { return }
+                if (meta.TransactionResult !== 'tesSUCCESS' && this.success) { return }
 
                 if (transaction.TransactionType === 'Payment') {
                     this.graphPayment(transaction)
