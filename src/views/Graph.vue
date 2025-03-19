@@ -260,7 +260,7 @@ export default {
                     this.graphOfferCreate(transaction)
                 }
                 else if (transaction.TransactionType === 'OfferCancel') {
-                
+                    // do nothing
                 }
                 else if (transaction.TransactionType === 'TrustSet') {
                     // console.log('TrustSet', transaction)
@@ -467,7 +467,7 @@ export default {
             try {
                 const data = pathParser(transaction)
                 // console.log(data)
-                this.graphData(data, transaction, 'dex')
+                this.graphData(data, transaction, 'DEX')
             } catch (e) {
                 // ignore...
             }
@@ -601,8 +601,8 @@ export default {
 
         },
         graphInvoke(transaction) {
-            // console.log('graphInvoke')
-            // console.log(transaction)
+            console.log('graphInvoke')
+            console.log(transaction)
             this.nodes.push({ id: transaction.Account, group: 'Invoke', color: '#FFA500', hash: transaction.hash, size: 1 })
             this.nodes.push({ id: transaction.Destination, group: 'Invoke', color: '#FFA500', hash: transaction.hash, size: 1 })
 
@@ -610,8 +610,8 @@ export default {
         graphURITokenMint(transaction) {
             // console.log('graphInvoke')
             // console.log(transaction)
-            this.nodes.push({ id: transaction.Account, group: 'NFT', color: '#FFA500', hash: transaction.hash, size: 1 })
-            this.nodes.push({ id: transaction.Destination, group: 'NFT', color: '#FFA500', hash: transaction.hash, size: 1 })
+            this.nodes.push({ id: transaction.Account, group: 'NFT', color: '#FFFF00', hash: transaction.hash, size: 1 })
+            this.nodes.push({ id: transaction.Destination, group: 'NFT', color: '#FFFF00', hash: transaction.hash, size: 1 })
 
         },
         graphURITokenBuy(transaction) {
