@@ -91,7 +91,8 @@
                 <p><i class="bi bi-circle-fill" style="color: #FFFF00;"></i> URIToken, Remit</p>
             </div>
             <div v-if="network === 'xahau'" class="row text-light">
-                <p><i class="bi bi-circle-fill" style="color: #FFA500;"></i> Invoke</p>
+                <!-- <p><i class="bi bi-circle-fill" style="color: #FFA500;"></i> Invoke</p> -->
+                <p><i class="bi bi-circle-fill" style="color: #FF1A8B;"></i> Invoke</p>
             </div>
         </div>
     </div>
@@ -503,6 +504,25 @@ export default {
             try {
                 const data = pathParser(transaction)
                 this.graphData(data, transaction)
+
+                let Other
+                let meta = transaction.metaData || transaction.meta
+                if (meta.HookExecutions === undefined) { return }
+                for (let index = 0; index < meta.HookExecutions.length; index++) {
+                    const nodes = meta.HookExecutions[index]
+                    // if (nodes.HookExecution.HookAccount !== 'AccountRoot') { continue }
+                    Other = nodes.HookExecution.HookAccount
+                    if (Other === undefined) { continue }
+                    if (Other === transaction.Account) { continue }
+                    this.nodes.push({ id: Other, group: 'Payment', color: '#1c9ce7', hash: transaction.hash, size: 1 })
+                    this.links.push({ source: Other, target: transaction.Account, group: 'Payment' })
+                    // console.log('graphPayment Other', Other)
+                    if (this.accounts[Other] === undefined) {
+                        this.accounts[Other] = {
+                            account: Other
+                        }
+                    }
+                }
             } catch (e) {
                 // ignore...
             }
@@ -614,7 +634,7 @@ export default {
             }
         },
         graphAccountSet(transaction) {
-            console.log('graphAccountSet', transaction)
+            // console.log('graphAccountSet', transaction)
             this.nodes.push({ id: transaction.Account, group: 'AccountSet', color: '#1c9ce7', hash: transaction.hash, size: 1 })
             
             if (this.accounts[transaction.Account] === undefined) {
@@ -622,7 +642,7 @@ export default {
                     account: transaction.Account
                 }
             }
-            console.log('graphAccountSet Account', transaction.Account)
+            // console.log('graphAccountSet Account', transaction.Account)
             
             let Other
             let meta = transaction.metaData || transaction.meta
@@ -635,15 +655,13 @@ export default {
                 if (Other === transaction.Account) { continue }
                 this.nodes.push({ id: Other, group: 'AccountSet', color: '#1c9ce7', hash: transaction.hash, size: 1 })
                 this.links.push({ source: Other, target: transaction.Account, group: 'AccountSet' })
-                console.log('graphAccountSet Other', Other)
+                // console.log('graphAccountSet Other', Other)
                 if (this.accounts[Other] === undefined) {
                     this.accounts[Other] = {
                         account: Other
                     }
                 }
             }
-            
-            
         },
         graphImport(transaction) {
             // console.log('graphImport', transaction)
@@ -680,12 +698,13 @@ export default {
 
         },
         graphInvoke(transaction) {
-            console.log('graphInvoke', transaction)
-            console.log('graphInvoke Account', transaction.Account)
-            console.log('graphInvoke Destination', transaction.Destination)
-            this.nodes.push({ id: transaction.Account, group: 'Invoke', color: '#FFA500', hash: transaction.hash, size: 1 })
-            this.nodes.push({ id: transaction.Destination, group: 'Invoke', color: '#FFA500', hash: transaction.hash, size: 1 })
+            // console.log('graphInvoke', transaction)
+            // console.log('graphInvoke Account', transaction.Account)
+            // console.log('graphInvoke Destination', transaction.Destination)
+            this.nodes.push({ id: transaction.Account, group: 'Invoke', color: '#FF1A8B', hash: transaction.hash, size: 1 })
+            this.nodes.push({ id: transaction.Destination, group: 'Invoke', color: '#FF1A8B', hash: transaction.hash, size: 1 })
             this.links.push({ source: transaction.Account, target: transaction.Destination, group: 'Invoke' })
+            // console.log('graphInvoke xxx', { source: transaction.Account, target: transaction.Destination, group: 'Invoke' })
             if (this.accounts[transaction.Account] === undefined) {
                 this.accounts[transaction.Account] = {
                     account: transaction.Account
@@ -707,7 +726,7 @@ export default {
                 if (Other === undefined) { continue }
                 if (Other === transaction.Account) { continue }
                 if (Other === transaction.Destination) { continue }
-                this.nodes.push({ id: Other, group: 'Invoke', color: '#FFA500', hash: transaction.hash, size: 1 })
+                this.nodes.push({ id: Other, group: 'Invoke', color: '#FF1A8B', hash: transaction.hash, size: 1 })
                 this.links.push({ source: Other, target: transaction.Account, group: 'Invoke' })
                 console.log('graphInvoke Other', Other)
                 if (this.accounts[Other] === undefined) {
@@ -871,14 +890,14 @@ export default {
                         account: element.account
                     }
 
-                    this.nodes.push({ id: element.account, group, color, hash: transaction.hash, size: this.scaleValue(value) })
+                    this.nodes.push({ id: element.account, group: 'Payment', color, hash: transaction.hash, size: this.scaleValue(value) })
                 }
                 else {
                     // update colors to the latest other wise.
                     for (let index = 0; index < this.nodes.length; index++) {
                         const node = this.nodes[index]
                         if (node.id !== element.account) { continue }
-                        if (node.color !== color && node.group !== 'amm') {
+                        if (node.color !== color && node.group !== 'AMM') {
                             // console.log('color changed', element.account, node.color, color)
                             node.color = color
                         }
@@ -893,7 +912,7 @@ export default {
                 }
 
                 if (data.sourceAccount !== element.account) {
-                    this.links.push({ source: data.sourceAccount, target: element.account, group })
+                    this.links.push({ source: data.sourceAccount, target: element.account, group: 'Payment' })
                 }
             }
         },
