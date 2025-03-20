@@ -66,7 +66,10 @@
             </div>
 
             <div v-if="network === 'xahau'" class="row text-light">
-                <p><i class="bi bi-circle-fill" style="color: #FF1A8B;"></i> Import</p>
+                <p><i class="bi bi-circle-fill" style="color: #1c37e7;"></i> Import</p>
+            </div>
+            <div class="row text-light">
+                <p><i class="bi bi-circle-fill" style="color: #1c9ce7;"></i> AccountSet</p>
             </div>
             
             <div class="row text-light">
@@ -324,6 +327,7 @@ export default {
                 }
                 else if (transaction.TransactionType === 'AccountSet') {
                     // do nothing
+                    this.graphAccountSet(transaction)
                 }
                 else if (transaction.TransactionType === 'UNLReport') {
                     // do nothing
@@ -606,10 +610,34 @@ export default {
                 }
             }
         },
+        graphAccountSet(transaction) {
+            console.log('graphAccountSet', transaction)
+            this.nodes.push({ id: transaction.Account, group: 'AccountSet', color: '#1c9ce7', hash: transaction.hash, size: 1 })
+            
+            if (this.accounts[transaction.Account] === undefined) {
+                this.accounts[transaction.Account] = {
+                    account: transaction.Account
+                }
+            }
+
+            for (let index = 0; index < meta.HookExecutions.length; index++) {
+                const nodes = meta.HookExecutions[index]
+                // if (nodes.HookExecution.HookAccount !== 'AccountRoot') { continue }
+                Other = nodes.HookExecution.HookAccount
+                if (Other === undefined) { continue }
+                this.nodes.push({ id: Other, group: 'AccountSet', color: '#1c9ce7', hash: transaction.hash, size: 1 })
+                this.links.push({ source: Other, target: transaction.Account, group: 'AccountSet' })
+            }
+            if (this.accounts[Other] === undefined) {
+                this.accounts[Other] = {
+                    account: Other
+                }
+            }
+        },
         graphImport(transaction) {
             console.log('graphImport', transaction)
-            this.nodes.push({ id: transaction.Account, group: 'Import', color: '#FF1A8B', hash: transaction.hash, size: 1 })
-            this.nodes.push({ id: transaction.Destination, group: 'Import', color: '#FF1A8B', hash: transaction.hash, size: 1 })
+            this.nodes.push({ id: transaction.Account, group: 'Import', color: '#1c37e7', hash: transaction.hash, size: 1 })
+            this.nodes.push({ id: transaction.Destination, group: 'Import', color: '#1c37e7', hash: transaction.hash, size: 1 })
             this.links.push({ source: transaction.Account, target: transaction.Destination, group: 'Import' })
             if (this.accounts[transaction.Account] === undefined) {
                 this.accounts[transaction.Account] = {
