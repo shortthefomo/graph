@@ -290,6 +290,9 @@ export default {
                     this.graphAMMBid(transaction)
                     // console.log('AMMBid', transaction)
                 }
+                else if (transaction.TransactionType === 'NFTokenMint') {
+                    // do nothing
+                }
                 else if (transaction.TransactionType === 'NFTokenCreateOffer' || transaction.TransactionType === 'URITokenCreateSellOffer') {
                     this.graphNFTokenCreateOffer(transaction)
                     // console.log('NFTokenCreateOffer', transaction)
@@ -338,7 +341,7 @@ export default {
                     console.log('other', transaction)
                 }
             } catch (error) {
-                console.log('this now fired')
+                console.log('this now fired', error)
             }
         },
         async handleFetch() {
@@ -483,7 +486,7 @@ export default {
             this.client.on('ledger', callback)
         },
         graphOfferCreate(transaction) {
-            console.log('graphOfferCreate', transaction)
+            // console.log('graphOfferCreate', transaction)
             transaction.meta  = transaction.metaData
             try {
                 const data = pathParser(transaction)
@@ -495,7 +498,7 @@ export default {
             
         },
         graphPayment(transaction) {
-            console.log('graphPayment', transaction)
+            // console.log('graphPayment', transaction)
             transaction.meta  = transaction.metaData
             try {
                 const data = pathParser(transaction)
@@ -505,7 +508,7 @@ export default {
             }
         },
         graphTrustSet(transaction) {
-            console.log('graphTrustSet', transaction)
+            // console.log('graphTrustSet', transaction)
             if (this.accounts[transaction.Account] === undefined) {
                 this.accounts[transaction.Account] = {
                     account: transaction.Account
@@ -522,7 +525,7 @@ export default {
             this.links.push({ source: transaction.Account, target: transaction.LimitAmount.issuer, group: 'TrustSet' })
         },
         graphAMMDeposit(transaction) {
-            console.log('graphAMMDeposit', transaction)
+            // console.log('graphAMMDeposit', transaction)
             if (this.accounts[transaction.Account] === undefined) {
                 this.accounts[transaction.Account] = {
                     account: transaction.Account
@@ -551,7 +554,7 @@ export default {
             }
         },
         graphAMMWithdraw(transaction) {
-            console.log('graphAMMWithdraw', transaction)
+            // console.log('graphAMMWithdraw', transaction)
             if (this.accounts[transaction.Account] === undefined) {
                 this.accounts[transaction.Account] = {
                     account: transaction.Account
@@ -581,7 +584,7 @@ export default {
             }
         },
         graphAMMBid(transaction) {
-            console.log('graphAMMBid', transaction)
+            // console.log('graphAMMBid', transaction)
             if (this.accounts[transaction.Account] === undefined) {
                 this.accounts[transaction.Account] = {
                     account: transaction.Account
@@ -619,23 +622,31 @@ export default {
                     account: transaction.Account
                 }
             }
-
+            console.log('graphAccountSet Account', transaction.Account)
+            
+            let Other
+            let meta = transaction.metaData || transaction.meta
+            if (meta.HookExecutions === undefined) { return }
             for (let index = 0; index < meta.HookExecutions.length; index++) {
                 const nodes = meta.HookExecutions[index]
                 // if (nodes.HookExecution.HookAccount !== 'AccountRoot') { continue }
                 Other = nodes.HookExecution.HookAccount
                 if (Other === undefined) { continue }
+                if (Other === transaction.Account) { continue }
                 this.nodes.push({ id: Other, group: 'AccountSet', color: '#1c9ce7', hash: transaction.hash, size: 1 })
                 this.links.push({ source: Other, target: transaction.Account, group: 'AccountSet' })
-            }
-            if (this.accounts[Other] === undefined) {
-                this.accounts[Other] = {
-                    account: Other
+                console.log('graphAccountSet Other', Other)
+                if (this.accounts[Other] === undefined) {
+                    this.accounts[Other] = {
+                        account: Other
+                    }
                 }
             }
+            
+            
         },
         graphImport(transaction) {
-            console.log('graphImport', transaction)
+            // console.log('graphImport', transaction)
             this.nodes.push({ id: transaction.Account, group: 'Import', color: '#1c37e7', hash: transaction.hash, size: 1 })
             this.nodes.push({ id: transaction.Destination, group: 'Import', color: '#1c37e7', hash: transaction.hash, size: 1 })
             this.links.push({ source: transaction.Account, target: transaction.Destination, group: 'Import' })
@@ -652,7 +663,7 @@ export default {
 
         },
         graphRemit(transaction) {
-            console.log('graphRemit', transaction)
+            // console.log('graphRemit', transaction)
             this.nodes.push({ id: transaction.Account, group: 'NFT', color: '#FFFF00', hash: transaction.hash, size: 1 })
             this.nodes.push({ id: transaction.Destination, group: 'NFT', color: '#FFFF00', hash: transaction.hash, size: 1 })
             this.links.push({ source: transaction.Account, target: transaction.Destination, group: 'NFT' })
@@ -670,6 +681,8 @@ export default {
         },
         graphInvoke(transaction) {
             console.log('graphInvoke', transaction)
+            console.log('graphInvoke Account', transaction.Account)
+            console.log('graphInvoke Destination', transaction.Destination)
             this.nodes.push({ id: transaction.Account, group: 'Invoke', color: '#FFA500', hash: transaction.hash, size: 1 })
             this.nodes.push({ id: transaction.Destination, group: 'Invoke', color: '#FFA500', hash: transaction.hash, size: 1 })
             this.links.push({ source: transaction.Account, target: transaction.Destination, group: 'Invoke' })
@@ -683,9 +696,31 @@ export default {
                     account: transaction.Destination
                 }
             }
+
+            let Other
+            let meta = transaction.metaData || transaction.meta
+            if (meta.HookExecutions === undefined) { return }
+            for (let index = 0; index < meta.HookExecutions.length; index++) {
+                const nodes = meta.HookExecutions[index]
+                // if (nodes.HookExecution.HookAccount !== 'AccountRoot') { continue }
+                Other = nodes.HookExecution.HookAccount
+                if (Other === undefined) { continue }
+                if (Other === transaction.Account) { continue }
+                if (Other === transaction.Destination) { continue }
+                this.nodes.push({ id: Other, group: 'Invoke', color: '#FFA500', hash: transaction.hash, size: 1 })
+                this.links.push({ source: Other, target: transaction.Account, group: 'Invoke' })
+                console.log('graphInvoke Other', Other)
+                if (this.accounts[Other] === undefined) {
+                    this.accounts[Other] = {
+                        account: Other
+                    }
+                }
+            }
+            
+            
         },
         graphURITokenMint(transaction) {
-            console.log('graphURITokenMint', transaction)
+            // console.log('graphURITokenMint', transaction)
             this.nodes.push({ id: transaction.Account, group: 'NFT', color: '#FFFF00', hash: transaction.hash, size: 1 })
 
             for (let index = 0; index < meta.AffectedNodes.length; index++) {
@@ -694,22 +729,24 @@ export default {
                 if (nodes.LedgerEntryType !== 'AccountRoot') { continue }
                 Other = nodes.FinalFields.RegularKey
                 if (Other === undefined) { continue }
+                if (Other === transaction.Account) { continue }
                 this.nodes.push({ id: Other, group: 'Invoke', color: '#FFA500', hash: transaction.hash, size: 1 })
                 this.links.push({ source: Other, target: transaction.Account, group: 'Invoke' })
+                if (this.accounts[Other] === undefined) {
+                    this.accounts[Other] = {
+                        account: Other
+                    }
+                }
             }
             if (this.accounts[transaction.Account] === undefined) {
                 this.accounts[transaction.Account] = {
                     account: transaction.Account
                 }
             }
-            if (this.accounts[Other] === undefined) {
-                this.accounts[Other] = {
-                    account: Other
-                }
-            }
+            
         },
         graphURITokenBuy(transaction) {
-            console.log('graphURITokenBuy', transaction)
+            // console.log('graphURITokenBuy', transaction)
 
             let Buyer
             this.nodes.push({ id: transaction.Account, group: 'NFT', color: '#FFFF00', hash: transaction.hash, size: 1 })
@@ -733,7 +770,7 @@ export default {
             }
         },
         graphNFTokenAcceptOffer(transaction) {
-            console.log('graphNFTokenAcceptOffer', transaction)
+            // console.log('graphNFTokenAcceptOffer', transaction)
 
             let Buyer
             // console.log('graphNFTokenAcceptOffer', transaction)
@@ -762,7 +799,7 @@ export default {
             }
         },
         graphNFTokenCreateOffer(transaction) {
-            console.log('graphNFTokenCreateOffer', transaction)
+            // console.log('graphNFTokenCreateOffer', transaction)
 
             if (this.accounts[transaction.Account] === undefined) {
                 this.accounts[transaction.Account] = {
