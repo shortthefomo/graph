@@ -723,6 +723,8 @@ export default {
             // console.log('graphURITokenMint', transaction)
             this.nodes.push({ id: transaction.Account, group: 'NFT', color: '#FFFF00', hash: transaction.hash, size: 1 })
 
+            let Other
+            let meta = transaction.metaData || transaction.meta
             for (let index = 0; index < meta.AffectedNodes.length; index++) {
                 const nodes = meta.AffectedNodes[index]
                 if (nodes.DeletedNode === undefined) { continue }
