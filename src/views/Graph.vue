@@ -545,7 +545,7 @@ export default {
             this.links.push({ source: transaction.Account, target: transaction.LimitAmount.issuer, group: 'TrustSet' })
         },
         graphAMMDeposit(transaction) {
-            // console.log('graphAMMDeposit', transaction)
+            console.log('graphAMMDeposit', transaction)
             if (this.accounts[transaction.Account] === undefined) {
                 this.accounts[transaction.Account] = {
                     account: transaction.Account
@@ -574,7 +574,7 @@ export default {
             }
         },
         graphAMMWithdraw(transaction) {
-            // console.log('graphAMMWithdraw', transaction)
+            console.log('graphAMMWithdraw', transaction)
             if (this.accounts[transaction.Account] === undefined) {
                 this.accounts[transaction.Account] = {
                     account: transaction.Account
@@ -873,13 +873,18 @@ export default {
                 else {
                     color = element.isAMM ? '#FF1A8B': element.isOffer ? '#00E56a' : element.isDirect? '#974CFF' : '#FFFFFF'
                 }
-                // find teleport.
+                // teleport bridge
                 if (element.account === 'rTeLeproT3BVgjWoYrDYpKbBLXPaVMkge') {
                     color = '#ffa500'
                 }
                 if (element.account === 'rEVRTELEpb16FQSGgK8GRJGy9ChviquddK') {
                     color = '#ffa500'
                 }
+                // axelar bridge
+                if (element.account === 'rfmS3zqrQrka8wVyhXifEeyTwe8AMz2Yhw') {
+                    color = '#ffa500'
+                }
+                
                 // corium bridge
                 if (element.account === 'rxXXXeMX8Gy5YvibvGLnQJ1XKKD7UswM1') {
                     color = '#ffa500'
