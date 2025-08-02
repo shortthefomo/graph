@@ -61,6 +61,9 @@
                 <button type="button" class="btn btn-primary" v-on:click="handleFetch" :disabled="ledger === undefined || loading">{{ loading ? 'Rendering':'Render'}}</button>
             </div>
             
+            <div class="row text-light">
+                <p><i class="bi bi-circle-fill" style="color: #ffa500;"></i> Bridge</p>
+            </div>
             <div v-if="network === 'xrpl'" class="row text-light">
                 <p><i class="bi bi-circle-fill" style="color: #FF1A8B;"></i> AMM</p>
             </div>
