@@ -414,12 +414,30 @@ export default {
                 this.ledgers++
             })
             try {
+                // console.log(this.nodes)
+                
+                this.links.forEach(link => {
+                    console.log()
+                    const includesA = this.nodes.some(obj => obj['id'] === link.source)
+                    const includesB = this.nodes.some(obj => obj['id'] === link.target)
+
+                    
+                    if (!includesA) {
+                        console.log('missing link', link)
+                        this.nodes.push({ id: link.source, group: link.group, color: '#1c9ce7', hash: link.hash, size: 1 })
+                    }
+
+                    if (!includesB) {
+                        console.log('missing link', link)
+                        this.nodes.push({ id: link.target, group: link.group, color: '#1c9ce7', hash: link.hash, size: 1 })
+                    }
+                })
                 this.graph.graphData({
                     nodes: this.nodes,
                     links: this.links
                 })
             } catch(e) {
-                console.log('hit this....')
+                console.log('hit this....', e)
             }
             
             this.pausedRefill = []
@@ -518,7 +536,7 @@ export default {
                     if (Other === undefined) { continue }
                     if (Other === transaction.Account) { continue }
                     this.nodes.push({ id: Other, group: 'Payment', color: '#1c9ce7', hash: transaction.hash, size: 1 })
-                    this.links.push({ source: Other, target: transaction.Account, group: 'Payment' })
+                    this.links.push({ source: Other, target: transaction.Account, group: 'Payment', hash: transaction.hash},)
                     // console.log('graphPayment Other', Other)
                     if (this.accounts[Other] === undefined) {
                         this.accounts[Other] = {
@@ -545,7 +563,7 @@ export default {
             
             this.nodes.push({ id: transaction.LimitAmount.issuer, group: 'TrustSet', color: '#00FFFF', hash: transaction.hash, size: 1 })
             this.nodes.push({ id: transaction.Account, group: 'TrustSet', color: '#00FFFF', hash: transaction.hash, size: 1 })
-            this.links.push({ source: transaction.Account, target: transaction.LimitAmount.issuer, group: 'TrustSet' })
+            this.links.push({ source: transaction.Account, target: transaction.LimitAmount.issuer, group: 'TrustSet', hash: transaction.hash })
         },
         graphAMMDeposit(transaction) {
             console.log('graphAMMDeposit', transaction)
@@ -558,7 +576,7 @@ export default {
             if (typeof transaction.Amount === 'object') {
                 this.nodes.push({ id: transaction.Amount.issuer, group: 'AMM', color: '#FF77FF', hash: transaction.hash, size: 1 })
                 this.nodes.push({ id: transaction.Account, group: 'AMM', color: '#FF77FF', hash: transaction.hash, size: 1 })
-                this.links.push({ source: transaction.Account, target: transaction.Amount.issuer, group: 'AMM' })
+                this.links.push({ source: transaction.Account, target: transaction.Amount.issuer, group: 'AMM', hash: transaction.hash })
                 if (this.accounts[transaction.Amount.issuer] === undefined) {
                     this.accounts[transaction.Amount.issuer] = {
                         account: transaction.Amount.issuer
@@ -568,7 +586,7 @@ export default {
             if (typeof transaction.Amount2 === 'object') {
                 this.nodes.push({ id: transaction.Amount2.issuer, group: 'AMM', color: '#FF77FF', hash: transaction.hash, size: 1 })
                 this.nodes.push({ id: transaction.Account, group: 'AMM', color: '#FF77FF', hash: transaction.hash, size: 1 })
-                this.links.push({ source: transaction.Account, target: transaction.Amount2.issuer, group: 'AMM' })
+                this.links.push({ source: transaction.Account, target: transaction.Amount2.issuer, group: 'AMM', hash: transaction.hash })
                 if (this.accounts[transaction.Amount2.issuer] === undefined) {
                     this.accounts[transaction.Amount2.issuer] = {
                         account: transaction.Amount2.issuer
@@ -588,7 +606,7 @@ export default {
             if (transaction.Asset.issuer !== 'XRP') {
                 this.nodes.push({ id: transaction.Asset.issuer, group: 'AMM', color: '#FF77FF', hash: transaction.hash, size: 1 })
                 this.nodes.push({ id: transaction.Account, group: 'AMM', color: '#FF77FF', hash: transaction.hash, size: 1 })
-                this.links.push({ source: transaction.Account, target: transaction.Asset.issuer, group: 'AMM' })
+                this.links.push({ source: transaction.Account, target: transaction.Asset.issuer, group: 'AMM', hash: transaction.hash })
                 if (this.accounts[transaction.Asset.issuer] === undefined) {
                     this.accounts[transaction.Asset.issuer] = {
                         account: transaction.Asset.issuer
@@ -598,7 +616,7 @@ export default {
             if (transaction.Asset2.issuer !== 'XRP') {
                 this.nodes.push({ id: transaction.Asset2.issuer, group: 'AMM', color: '#FF77FF', hash: transaction.hash, size: 1 })
                 this.nodes.push({ id: transaction.Account, group: 'AMM', color: '#FF77FF', hash: transaction.hash, size: 1 })
-                this.links.push({ source: transaction.Account, target: transaction.Asset2.issuer, group: 'AMM' })
+                this.links.push({ source: transaction.Account, target: transaction.Asset2.issuer, group: 'AMM', hash: transaction.hash })
                 if (this.accounts[transaction.Asset2.issuer] === undefined) {
                     this.accounts[transaction.Asset2.issuer] = {
                         account: transaction.Asset2.issuer
@@ -618,7 +636,7 @@ export default {
             if (transaction.Asset.issuer !== 'XRP') {
                 this.nodes.push({ id: transaction.Asset.issuer, group: 'AMM', color: '#FF77FF', hash: transaction.hash, size: 1 })
                 this.nodes.push({ id: transaction.Account, group: 'AMM', color: '#FF77FF', hash: transaction.hash, size: 1 })
-                this.links.push({ source: transaction.Account, target: transaction.Asset.issuer, group: 'AMM' })
+                this.links.push({ source: transaction.Account, target: transaction.Asset.issuer, group: 'AMM', hash: transaction.hash })
                 if (this.accounts[transaction.Asset.issuer] === undefined) {
                     this.accounts[transaction.Asset.issuer] = {
                         account: transaction.Asset.issuer
@@ -628,7 +646,7 @@ export default {
             if (transaction.Asset2.issuer !== 'XRP') {
                 this.nodes.push({ id: transaction.Asset2.issuer, group: 'AMM', color: '#FF77FF', hash: transaction.hash, size: 1 })
                 this.nodes.push({ id: transaction.Account, group: 'AMM', color: '#FF77FF', hash: transaction.hash, size: 1 })
-                this.links.push({ source: transaction.Account, target: transaction.Asset2.issuer, group: 'AMM' })
+                this.links.push({ source: transaction.Account, target: transaction.Asset2.issuer, group: 'AMM', hash: transaction.hash})
                 if (this.accounts[transaction.Asset2.issuer] === undefined) {
                     this.accounts[transaction.Asset2.issuer] = {
                         account: transaction.Asset2.issuer
@@ -657,7 +675,7 @@ export default {
                 if (Other === undefined) { continue }
                 if (Other === transaction.Account) { continue }
                 this.nodes.push({ id: Other, group: 'AccountSet', color: '#1c9ce7', hash: transaction.hash, size: 1 })
-                this.links.push({ source: Other, target: transaction.Account, group: 'AccountSet' })
+                this.links.push({ source: Other, target: transaction.Account, group: 'AccountSet', hash: transaction.hash })
                 // console.log('graphAccountSet Other', Other)
                 if (this.accounts[Other] === undefined) {
                     this.accounts[Other] = {
@@ -670,7 +688,7 @@ export default {
             // console.log('graphImport', transaction)
             this.nodes.push({ id: transaction.Account, group: 'Import', color: '#1c37e7', hash: transaction.hash, size: 1 })
             this.nodes.push({ id: transaction.Destination, group: 'Import', color: '#1c37e7', hash: transaction.hash, size: 1 })
-            this.links.push({ source: transaction.Account, target: transaction.Destination, group: 'Import' })
+            this.links.push({ source: transaction.Account, target: transaction.Destination, group: 'Import', hash: transaction.hash })
             if (this.accounts[transaction.Account] === undefined) {
                 this.accounts[transaction.Account] = {
                     account: transaction.Account
@@ -687,7 +705,7 @@ export default {
             // console.log('graphRemit', transaction)
             this.nodes.push({ id: transaction.Account, group: 'NFT', color: '#FFFF00', hash: transaction.hash, size: 1 })
             this.nodes.push({ id: transaction.Destination, group: 'NFT', color: '#FFFF00', hash: transaction.hash, size: 1 })
-            this.links.push({ source: transaction.Account, target: transaction.Destination, group: 'NFT' })
+            this.links.push({ source: transaction.Account, target: transaction.Destination, group: 'NFT', hash: transaction.hash })
             if (this.accounts[transaction.Account] === undefined) {
                 this.accounts[transaction.Account] = {
                     account: transaction.Account
@@ -706,7 +724,7 @@ export default {
             // console.log('graphInvoke Destination', transaction.Destination)
             this.nodes.push({ id: transaction.Account, group: 'Invoke', color: '#FF1A8B', hash: transaction.hash, size: 1 })
             this.nodes.push({ id: transaction.Destination, group: 'Invoke', color: '#FF1A8B', hash: transaction.hash, size: 1 })
-            this.links.push({ source: transaction.Account, target: transaction.Destination, group: 'Invoke' })
+            this.links.push({ source: transaction.Account, target: transaction.Destination, group: 'Invoke', hash: transaction.hash })
             // console.log('graphInvoke xxx', { source: transaction.Account, target: transaction.Destination, group: 'Invoke' })
             if (this.accounts[transaction.Account] === undefined) {
                 this.accounts[transaction.Account] = {
@@ -730,7 +748,7 @@ export default {
                 if (Other === transaction.Account) { continue }
                 if (Other === transaction.Destination) { continue }
                 this.nodes.push({ id: Other, group: 'Invoke', color: '#FF1A8B', hash: transaction.hash, size: 1 })
-                this.links.push({ source: Other, target: transaction.Account, group: 'Invoke' })
+                this.links.push({ source: Other, target: transaction.Account, group: 'Invoke', hash: transaction.hash })
                 console.log('graphInvoke Other', Other)
                 if (this.accounts[Other] === undefined) {
                     this.accounts[Other] = {
@@ -755,7 +773,7 @@ export default {
                 if (Other === undefined) { continue }
                 if (Other === transaction.Account) { continue }
                 this.nodes.push({ id: Other, group: 'Invoke', color: '#FFA500', hash: transaction.hash, size: 1 })
-                this.links.push({ source: Other, target: transaction.Account, group: 'Invoke' })
+                this.links.push({ source: Other, target: transaction.Account, group: 'Invoke', hash: transaction.hash })
                 if (this.accounts[Other] === undefined) {
                     this.accounts[Other] = {
                         account: Other
@@ -780,7 +798,7 @@ export default {
                 if (nodes.LedgerEntryType !== 'URIToken') { continue }
                 Buyer = nodes.FinalFields.Issuer
                 this.nodes.push({ id: Buyer, group: 'NFT', color: '#FFFF00', hash: transaction.hash, size: 1 })
-                this.links.push({ source: Buyer, target: transaction.Account, group: 'NFT' })
+                this.links.push({ source: Buyer, target: transaction.Account, group: 'NFT', hash: transaction.hash })
             }
             if (this.accounts[transaction.Account] === undefined) {
                 this.accounts[transaction.Account] = {
@@ -819,7 +837,7 @@ export default {
 
             if (Buyer !== undefined) {
                 this.nodes.push({ id: transaction.Account, group: 'NFT', color: '#FFFF00', hash: transaction.hash, size: 1 })
-                this.links.push({ source: transaction.Account, target: Buyer, group: 'NFT' })
+                this.links.push({ source: transaction.Account, target: Buyer, group: 'NFT', hash: transaction.hash })
             }
         },
         graphNFTokenCreateOffer(transaction) {
@@ -838,7 +856,7 @@ export default {
 
             this.nodes.push({ id: transaction.Destination, group: 'NFT', color: '#FFFF00', hash: transaction.hash, size: 1 })
             this.nodes.push({ id: transaction.Account, group: 'NFT', color: '#FFFF00', hash: transaction.hash, size: 1 })
-            this.links.push({ source: transaction.Account, target: transaction.Destination, group: 'NFT' })
+            this.links.push({ source: transaction.Account, target: transaction.Destination, group: 'NFT', hash: transaction.hash })
         },
         scaleValue(value) {
             if (value < 1) { return 1 }
@@ -920,7 +938,7 @@ export default {
                 }
 
                 if (data.sourceAccount !== element.account) {
-                    this.links.push({ source: data.sourceAccount, target: element.account, group: 'Payment' })
+                    this.links.push({ source: data.sourceAccount, target: element.account, group: 'Payment', hash: transaction.hash })
                 }
             }
         },
