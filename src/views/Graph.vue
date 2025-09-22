@@ -2,7 +2,7 @@
     
     <div class="row">
         <div class="col ms-5 mt-5">
-            <div class="input-group mb-2">
+            <!-- div class="input-group mb-2">
                 <span class="input-group-text">Network</span>
                 <select v-model="network" v-on:change="handleChangeNetwork($event)">
                     <option v-for="(option, index) in networks" :value="option.value" :key="index">
@@ -17,7 +17,7 @@
                         {{ option.label }}
                     </option>
                 </select>
-            </div>
+            </div -->
             <!-- div class="input-group mb-2">
                 <div class="form-check form-switch">
                     <input v-model="pause" v-on:click="handleChangePause" class="form-check-input" type="checkbox" role="switch" id="flexBloomPause" checked>
@@ -32,18 +32,18 @@
                 </div>
             </div> -->
             
-            <div class="input-group mb-2">
+            <!-- div class="input-group mb-2">
                 <div class="form-check form-switch">
                     <input v-model="success" v-on:click="handleSucess" class="form-check-input" type="checkbox" role="switch" id="flexSucessSwitch" checked>
                     <label class="form-check-label text-white" for="flexSucessSwitch">tesSUCCESS</label>
                 </div>
-            </div>
-            <div class="input-group mb-2">
+            </div -->
+            <!-- div class="input-group mb-2">
                 <div class="form-check form-switch">
                     <input v-model="dimentions" v-on:click="handleChangDimentions" class="form-check-input" type="checkbox" role="switch" id="flexDimentionsSwitch" checked>
                     <label class="form-check-label text-white" for="flexDimentionsSwitch">2D/3D</label>
                 </div>
-            </div>
+            </div -->
             <div class="input-group mb-2">
                 <div class="form-check form-switch">
                     <input v-model="bloom_show" v-on:click="handleChangeBloom" class="form-check-input" type="checkbox" role="switch" id="flexBloomSwitch" checked>
@@ -57,9 +57,9 @@
                 </div>
             </div> -->
 
-            <div class="input-group mb-5 text-white">
+            <!-- div class="input-group mb-5 text-white">
                 <button type="button" class="btn btn-primary" v-on:click="handleFetch" :disabled="ledger === undefined || loading">{{ loading ? 'Rendering':'Render'}}</button>
-            </div>
+            </div-->
             
             <div class="row text-light">
                 <p><i class="bi bi-circle-fill" style="color: #ffa500;"></i> Bridge</p>
@@ -106,7 +106,6 @@
 </template>
 
 <script>
-import pathParser from 'xrpl-tx-path-parser'
 import ForceGraph3D from '3d-force-graph'
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js'
 // import { GlitchPass } from 'three/examples/jsm/postprocessing/GlitchPass.js'
@@ -160,9 +159,7 @@ export default {
             pause: false,
             loading: false,
             pausedRefill: [],
-            ignored: [
-               // 'rxRpSNb1VktvzBz8JF2oJC6qaww6RZ7Lw'
-            ] // remove spam from the render, if wanted.
+            time: undefined
         }
     },
     computed: {
@@ -170,9 +167,7 @@ export default {
     
     async mounted() {
         console.log('loading...')
-        
-        this.$store.dispatch('clientConnect',  { network: this.network, force: false })
-        await this.connect()
+        this.graphAMMs()
         this.init()
     },
     methods: {
@@ -218,646 +213,58 @@ export default {
                 this.graph.onNodeClick()
             }
         },
-        handleChangePause() {
-            if (this.pause) {
-                this.renderPaused()
-            }            
-        },
-        renderPaused() {
-            this.pausedRefill.forEach(ledger_result => {
-                // console.log('RF', ledger_result)
-                if ('ledger' in ledger_result && 'transactions' in ledger_result.ledger) {
-                    // console.log('transactions', transactions)
-
-                    for (let i = 0; i < ledger_result.ledger.transactions.length; i++) {
-                        const transaction = ledger_result.ledger.transactions[i]
-                        this.handelTx(transaction)
-                    }
-                }
-                this.ledgers++
-            })
-            this.graph.graphData({
-                nodes: this.nodes,
-                links: this.links
-            })
-            this.pausedRefill = []
-        },
         handleSucess() {
             this.success = !this.success
         },
         handleChangDimentions() {
             (!this.dimentions) ? this.graph.numDimensions(3) : this.graph.numDimensions(2)
         },
-        async handleChangeNetwork(event) {
-            this.network = event.target.value
-            
-
-            this.$store.dispatch('clientConnect',  { network: this.network, force: false })
-            await this.connect()
-
-            this.ledgers = 0
-            this.nodes = []
-            this.links = []
-            this.accounts = {}
-            this.graph.graphData({
-                nodes: this.nodes,
-                links: this.links
-            })
-        },
-        handelTx(transaction) {
-            try {
-                let meta = transaction.metaData || transaction.meta
-                if (meta.TransactionResult !== 'tesSUCCESS' && this.success) { return }
-
-                if (transaction.TransactionType === 'Payment') {
-                    this.graphPayment(transaction)
-                }
-                else if (transaction.TransactionType === 'OfferCreate') {
-                    this.graphOfferCreate(transaction)
-                }
-                else if (transaction.TransactionType === 'OfferCancel') {
-                    // do nothing
-                }
-                else if (transaction.TransactionType === 'TrustSet') {
-                    // console.log('TrustSet', transaction)
-                    this.graphTrustSet(transaction)
-                }
-                else if (transaction.TransactionType === 'AMMDeposit') {
-                    this.graphAMMDeposit(transaction)
-                    // console.log('AMMDeposit', transaction)
-                }
-                else if (transaction.TransactionType === 'AMMWithdraw') {
-                    this.graphAMMWithdraw(transaction)
-                    // console.log('AMMWithdraw', transaction)
-                }
-                else if (transaction.TransactionType === 'AMMBid') {
-                    this.graphAMMBid(transaction)
-                    // console.log('AMMBid', transaction)
-                }
-                else if (transaction.TransactionType === 'NFTokenMint') {
-                    // do nothing
-                }
-                else if (transaction.TransactionType === 'NFTokenCreateOffer' || transaction.TransactionType === 'URITokenCreateSellOffer') {
-                    this.graphNFTokenCreateOffer(transaction)
-                    // console.log('NFTokenCreateOffer', transaction)
-                }
-                else if (transaction.TransactionType === 'NFTokenCancelOffer' || transaction.TransactionType === 'URITokenCancelSellOffer') {
-                    // do nothing
-                }
-                else if (transaction.TransactionType === 'NFTokenAcceptOffer') {
-                    this.graphNFTokenAcceptOffer(transaction)
-                    // console.log('NFTokenAcceptOffer', transaction)
-                }
-                else if (transaction.TransactionType === 'URITokenBuy') {
-                    this.graphURITokenBuy(transaction)
-                    // console.log('NFTokenAcceptOffer', transaction)
-                }
-                else if (transaction.TransactionType === 'URITokenMint') {
-                    this.graphURITokenMint(transaction)
-                    // console.log('NFTokenAcceptOffer', transaction)
-                }
-                else if (transaction.TransactionType === 'Import') {
-                    this.graphImport(transaction)
-                    // console.log('NFTokenAcceptOffer', transaction)
-                }
-                else if (transaction.TransactionType === 'OracleSet') {
-                    // do nothing
-                }
-                else if (transaction.TransactionType === 'TicketCreate') {
-                    // do nothing
-                }
-                else if (transaction.TransactionType === 'Invoke') {
-                    this.graphInvoke(transaction)
-                }
-                else if (transaction.TransactionType === 'URITokenBurn') {
-                    // do nothing
-                }
-                else if (transaction.TransactionType === 'AccountSet') {
-                    // do nothing
-                    this.graphAccountSet(transaction)
-                }
-                else if (transaction.TransactionType === 'UNLReport') {
-                    // do nothing
-                }
-                
-                else {
-                    console.log('type', transaction.TransactionType)
-                    console.log('other', transaction)
-                }
-            } catch (error) {
-                console.log('this now fired', error)
-            }
-        },
+        
         async handleFetch() {
             this.rendered_label = undefined
             this.loading = true
-            this.ledgers = 0
             this.nodes = []
             this.links = []
-            this.accounts = {}
             this.graph.graphData({
                 nodes: this.nodes,
                 links: this.links
             })
-            this.pausedRefill = []
-            await this.fetchLedgers(this.range)
-            const index = this.fixed_index === undefined ? this.ledger : this.fixed_index
-            this.rendered_label = (index - this.range) + ' - ' + index
+            
             this.loading = false
         },
-        async connect() {
-            if (this.client !== undefined) {
-                this.client.close()
-            }
-            let nodes
-            if (this.network ==='xrpl') {
-                nodes = import.meta.env.VITE_APP_XRPL_WSS.split(', ')
-                this.$store.dispatch('setClientNodes', { network: 'xrpl', nodes: nodes })
-            }
-            else {
-                nodes = import.meta.env.VITE_APP_XAH_WSS.split(', ')
-                this.$store.dispatch('setClientNodes', { network: 'xahau', nodes: nodes })
-            }
-            
 
-            console.log('connect ' + this.network)
-            this.$store.dispatch('clearBooks', this.network)
-            this.$store.dispatch('clientConnect', { network: this.network, force: false })
+        async graphAMMs() {
+            console.log('graphAMMs')
+            const data = await this.axios.get('https://liquidity.panicbot.app/api/v1/liquidity').then(response => response.data)
             
-            await this.ledgerClose()
-            // await this.accountTX('rapido5rxPmP4YkMZZEeXSHqWefxHEkqv6')
-            // await this.accountTX('rTeLeproT3BVgjWoYrDYpKbBLXPaVMkge')
-            // await this.accountTX('rfKsmLP6sTfVGDvga6rW6XbmSFUzc3G9f3')
-            
-        },
-        async fetchLedgers(range) {
-            
-            let index = this.fixed_index === undefined ? this.ledger : this.fixed_index
-            console.log('fetching fetchLedgers', index, range)
-            let count = 1
-            while (count <= range) {
-                await this.fetchLedger(index)
-                index--
-                count++
-            }
-
-            this.pausedRefill.forEach(ledger_result => {
-                console.log('RF', ledger_result)
-                if ('ledger' in ledger_result && 'transactions' in ledger_result.ledger) {
-                    // console.log('transactions', transactions)
-
-                    for (let i = 0; i < ledger_result.ledger.transactions.length; i++) {
-                        const transaction = ledger_result.ledger.transactions[i]
-                        this.handelTx(transaction)
-                    }
+            console.log('AMM data loaded')
+            for (const [key, value] of Object.entries(data)) {
+                if (key === 'time') {
+                    console.log('updating time', value)
+                    this.time = value
+                    continue
                 }
-                this.ledgers++
-            })
-            try {
-                // console.log(this.nodes)
-                
-                this.links.forEach(link => {
-                    console.log()
-                    const includesA = this.nodes.some(obj => obj['id'] === link.source)
-                    const includesB = this.nodes.some(obj => obj['id'] === link.target)
+                value.key = key
+                console.log(value.asset1.currency, value.asset2.currency, value.asset1.issuer, value.asset2.issuer)
+                this.nodes.push({ id: value.asset2.issuer, group: 'AMM', color: '#1c9ce7', hash: value.asset2.currency, size: 1 })
+                this.nodes.push({ id: value.asset1.issuer, group: 'AMM', color: '#1c9ce7', hash: value.asset1.currency, size: 1 })
+                this.links.push({ source: value.asset1.issuer, target: value.asset2.issuer, group: 'AMM', hash: value.asset1.currency })
 
-                    
-                    if (!includesA) {
-                        console.log('missing link', link)
-                        this.nodes.push({ id: link.source, group: link.group, color: '#1c9ce7', hash: link.hash, size: 1 })
-                    }
-
-                    if (!includesB) {
-                        console.log('missing link', link)
-                        this.nodes.push({ id: link.target, group: link.group, color: '#1c9ce7', hash: link.hash, size: 1 })
-                    }
-                })
-                this.graph.graphData({
-                    nodes: this.nodes,
-                    links: this.links
-                })
-            } catch(e) {
-                console.log('hit this....', e)
-            }
-            
-            this.pausedRefill = []
-        },
-        async fetchLedger(index) {
-            console.log('fetching ledger', index)
-            let request = {
-                'id': 'xrpl-local',
-                'command': 'ledger',
-                'ledger_index': index,
-                'transactions': true,
-                'expand': true,
-                'owner_funds': true
-            }
-            this.client = this.$store.getters.getClient(this.network)
-            const ledger_result = await this.client.send(request)
-            // console.log('ledger_result', ledger_result)
-            if ('error' in ledger_result) { return }
-            this.pausedRefill.push(ledger_result)
-        },
-        async ledgerClose() {
-            this.client = this.$store.getters.getClient(this.network)
-            console.log(await this.client.send({'command': 'server_info'}))
-            const callback = async (event) => {
-                
-                let request = {
-                    'id': 'xrpl-local',
-                    'command': 'ledger',
-                    'ledger_hash': event.ledger_hash,
-                    'ledger_index': 'validated',
-                    'transactions': true,
-                    'expand': true,
-                    'owner_funds': true
-                }
-                const ledger_result = await this.client.send(request)
-                // console.log('ledger_result', ledger_result)
-                if ('error' in ledger_result) { return }
-
-                
-                console.log('ledger_index', ledger_result.ledger.ledger_index)
-                
-                this.ledger = ledger_result.ledger.ledger_index
-                
-                
-
-                // this.pausedRefill.push(ledger_result)
-                // if (this.pausedRefill.length % this.queue_size === 0) { 
-                //     this.renderPaused()
-                //     return 
-                // }
-                // if ('ledger' in ledger_result && 'transactions' in ledger_result.ledger) {
-                //     // console.log('transactions', transactions)
-
-                //     for (let i = 0; i < ledger_result.ledger.transactions.length; i++) {
-                //         const transaction = ledger_result.ledger.transactions[i]
-                        
-                //         this.handelTx(transaction)
+                // if (this.base_asset === value.asset2.currency) {
+                //     if (!this.issuers.includes(value.asset2.issuer)) {
+                //         this.issuers.push(value.asset2.issuer)
                 //     }
                 // }
-
-                // this.graph.graphData({
-                //     nodes: this.nodes,
-                //     links: this.links
-                // })
-                // this.ledgers++
-            }
-
-            this.client.on('ledger', callback)
-        },
-        graphOfferCreate(transaction) {
-            // console.log('graphOfferCreate', transaction)
-            transaction.meta  = transaction.metaData
-            try {
-                const data = pathParser(transaction)
-                // console.log(data)
-                this.graphData(data, transaction, 'DEX')
-            } catch (e) {
-                // ignore...
-            }
-            
-        },
-        graphPayment(transaction) {
-            // console.log('graphPayment', transaction)
-            transaction.meta  = transaction.metaData
-            try {
-                const data = pathParser(transaction)
-                this.graphData(data, transaction)
-
-                let Other
-                let meta = transaction.metaData || transaction.meta
-                if (meta.HookExecutions === undefined) { return }
-                for (let index = 0; index < meta.HookExecutions.length; index++) {
-                    const nodes = meta.HookExecutions[index]
-                    // if (nodes.HookExecution.HookAccount !== 'AccountRoot') { continue }
-                    Other = nodes.HookExecution.HookAccount
-                    if (Other === undefined) { continue }
-                    if (Other === transaction.Account) { continue }
-                    this.nodes.push({ id: Other, group: 'Payment', color: '#1c9ce7', hash: transaction.hash, size: 1 })
-                    this.links.push({ source: Other, target: transaction.Account, group: 'Payment', hash: transaction.hash},)
-                    // console.log('graphPayment Other', Other)
-                    if (this.accounts[Other] === undefined) {
-                        this.accounts[Other] = {
-                            account: Other
-                        }
-                    }
-                }
-            } catch (e) {
-                // ignore...
+                // else if (this.base_asset === value.asset1.currency) {
+                //     if (!this.issuers.includes(value.asset1.issuer)) {
+                //         this.issuers.push(value.asset1.issuer)
+                //     }
+                // }
             }
         },
-        graphTrustSet(transaction) {
-            // console.log('graphTrustSet', transaction)
-            if (this.accounts[transaction.Account] === undefined) {
-                this.accounts[transaction.Account] = {
-                    account: transaction.Account
-                }
-            }
-            if (this.accounts[transaction.LimitAmount.issuer] === undefined) {
-                this.accounts[transaction.LimitAmount.issuer] = {
-                    account: transaction.LimitAmount.issuer
-                }
-            }
-            
-            this.nodes.push({ id: transaction.LimitAmount.issuer, group: 'TrustSet', color: '#00FFFF', hash: transaction.hash, size: 1 })
-            this.nodes.push({ id: transaction.Account, group: 'TrustSet', color: '#00FFFF', hash: transaction.hash, size: 1 })
-            this.links.push({ source: transaction.Account, target: transaction.LimitAmount.issuer, group: 'TrustSet', hash: transaction.hash })
-        },
-        graphAMMDeposit(transaction) {
-            console.log('graphAMMDeposit', transaction)
-            if (this.accounts[transaction.Account] === undefined) {
-                this.accounts[transaction.Account] = {
-                    account: transaction.Account
-                }
-            }
-            
-            if (typeof transaction.Amount === 'object') {
-                this.nodes.push({ id: transaction.Amount.issuer, group: 'AMM', color: '#FF77FF', hash: transaction.hash, size: 1 })
-                this.nodes.push({ id: transaction.Account, group: 'AMM', color: '#FF77FF', hash: transaction.hash, size: 1 })
-                this.links.push({ source: transaction.Account, target: transaction.Amount.issuer, group: 'AMM', hash: transaction.hash })
-                if (this.accounts[transaction.Amount.issuer] === undefined) {
-                    this.accounts[transaction.Amount.issuer] = {
-                        account: transaction.Amount.issuer
-                    }
-                }
-            }
-            if (typeof transaction.Amount2 === 'object') {
-                this.nodes.push({ id: transaction.Amount2.issuer, group: 'AMM', color: '#FF77FF', hash: transaction.hash, size: 1 })
-                this.nodes.push({ id: transaction.Account, group: 'AMM', color: '#FF77FF', hash: transaction.hash, size: 1 })
-                this.links.push({ source: transaction.Account, target: transaction.Amount2.issuer, group: 'AMM', hash: transaction.hash })
-                if (this.accounts[transaction.Amount2.issuer] === undefined) {
-                    this.accounts[transaction.Amount2.issuer] = {
-                        account: transaction.Amount2.issuer
-                    }
-                }
-            }
-        },
-        graphAMMWithdraw(transaction) {
-            console.log('graphAMMWithdraw', transaction)
-            if (this.accounts[transaction.Account] === undefined) {
-                this.accounts[transaction.Account] = {
-                    account: transaction.Account
-                }
-            }
-            
-            
-            if (transaction.Asset.issuer !== 'XRP') {
-                this.nodes.push({ id: transaction.Asset.issuer, group: 'AMM', color: '#FF77FF', hash: transaction.hash, size: 1 })
-                this.nodes.push({ id: transaction.Account, group: 'AMM', color: '#FF77FF', hash: transaction.hash, size: 1 })
-                this.links.push({ source: transaction.Account, target: transaction.Asset.issuer, group: 'AMM', hash: transaction.hash })
-                if (this.accounts[transaction.Asset.issuer] === undefined) {
-                    this.accounts[transaction.Asset.issuer] = {
-                        account: transaction.Asset.issuer
-                    }
-                }
-            }
-            if (transaction.Asset2.issuer !== 'XRP') {
-                this.nodes.push({ id: transaction.Asset2.issuer, group: 'AMM', color: '#FF77FF', hash: transaction.hash, size: 1 })
-                this.nodes.push({ id: transaction.Account, group: 'AMM', color: '#FF77FF', hash: transaction.hash, size: 1 })
-                this.links.push({ source: transaction.Account, target: transaction.Asset2.issuer, group: 'AMM', hash: transaction.hash })
-                if (this.accounts[transaction.Asset2.issuer] === undefined) {
-                    this.accounts[transaction.Asset2.issuer] = {
-                        account: transaction.Asset2.issuer
-                    }
-                }
-            }
-        },
-        graphAMMBid(transaction) {
-            // console.log('graphAMMBid', transaction)
-            if (this.accounts[transaction.Account] === undefined) {
-                this.accounts[transaction.Account] = {
-                    account: transaction.Account
-                }
-            }
-            
-            
-            if (transaction.Asset.issuer !== 'XRP') {
-                this.nodes.push({ id: transaction.Asset.issuer, group: 'AMM', color: '#FF77FF', hash: transaction.hash, size: 1 })
-                this.nodes.push({ id: transaction.Account, group: 'AMM', color: '#FF77FF', hash: transaction.hash, size: 1 })
-                this.links.push({ source: transaction.Account, target: transaction.Asset.issuer, group: 'AMM', hash: transaction.hash })
-                if (this.accounts[transaction.Asset.issuer] === undefined) {
-                    this.accounts[transaction.Asset.issuer] = {
-                        account: transaction.Asset.issuer
-                    }
-                }
-            }
-            if (transaction.Asset2.issuer !== 'XRP') {
-                this.nodes.push({ id: transaction.Asset2.issuer, group: 'AMM', color: '#FF77FF', hash: transaction.hash, size: 1 })
-                this.nodes.push({ id: transaction.Account, group: 'AMM', color: '#FF77FF', hash: transaction.hash, size: 1 })
-                this.links.push({ source: transaction.Account, target: transaction.Asset2.issuer, group: 'AMM', hash: transaction.hash})
-                if (this.accounts[transaction.Asset2.issuer] === undefined) {
-                    this.accounts[transaction.Asset2.issuer] = {
-                        account: transaction.Asset2.issuer
-                    }
-                }
-            }
-        },
-        graphAccountSet(transaction) {
-            // console.log('graphAccountSet', transaction)
-            this.nodes.push({ id: transaction.Account, group: 'AccountSet', color: '#1c9ce7', hash: transaction.hash, size: 1 })
-            
-            if (this.accounts[transaction.Account] === undefined) {
-                this.accounts[transaction.Account] = {
-                    account: transaction.Account
-                }
-            }
-            // console.log('graphAccountSet Account', transaction.Account)
-            
-            let Other
-            let meta = transaction.metaData || transaction.meta
-            if (meta.HookExecutions === undefined) { return }
-            for (let index = 0; index < meta.HookExecutions.length; index++) {
-                const nodes = meta.HookExecutions[index]
-                // if (nodes.HookExecution.HookAccount !== 'AccountRoot') { continue }
-                Other = nodes.HookExecution.HookAccount
-                if (Other === undefined) { continue }
-                if (Other === transaction.Account) { continue }
-                this.nodes.push({ id: Other, group: 'AccountSet', color: '#1c9ce7', hash: transaction.hash, size: 1 })
-                this.links.push({ source: Other, target: transaction.Account, group: 'AccountSet', hash: transaction.hash })
-                // console.log('graphAccountSet Other', Other)
-                if (this.accounts[Other] === undefined) {
-                    this.accounts[Other] = {
-                        account: Other
-                    }
-                }
-            }
-        },
-        graphImport(transaction) {
-            // console.log('graphImport', transaction)
-            this.nodes.push({ id: transaction.Account, group: 'Import', color: '#1c37e7', hash: transaction.hash, size: 1 })
-            this.nodes.push({ id: transaction.Destination, group: 'Import', color: '#1c37e7', hash: transaction.hash, size: 1 })
-            this.links.push({ source: transaction.Account, target: transaction.Destination, group: 'Import', hash: transaction.hash })
-            if (this.accounts[transaction.Account] === undefined) {
-                this.accounts[transaction.Account] = {
-                    account: transaction.Account
-                }
-            }
-            if (this.accounts[transaction.Destination] === undefined) {
-                this.accounts[transaction.Destination] = {
-                    account: transaction.Destination
-                }
-            }
-
-        },
-        graphRemit(transaction) {
-            // console.log('graphRemit', transaction)
-            this.nodes.push({ id: transaction.Account, group: 'NFT', color: '#FFFF00', hash: transaction.hash, size: 1 })
-            this.nodes.push({ id: transaction.Destination, group: 'NFT', color: '#FFFF00', hash: transaction.hash, size: 1 })
-            this.links.push({ source: transaction.Account, target: transaction.Destination, group: 'NFT', hash: transaction.hash })
-            if (this.accounts[transaction.Account] === undefined) {
-                this.accounts[transaction.Account] = {
-                    account: transaction.Account
-                }
-            }
-            if (this.accounts[transaction.Destination] === undefined) {
-                this.accounts[transaction.Destination] = {
-                    account: transaction.Destination
-                }
-            }
-
-        },
-        graphInvoke(transaction) {
-            // console.log('graphInvoke', transaction)
-            // console.log('graphInvoke Account', transaction.Account)
-            // console.log('graphInvoke Destination', transaction.Destination)
-            this.nodes.push({ id: transaction.Account, group: 'Invoke', color: '#FF1A8B', hash: transaction.hash, size: 1 })
-            this.nodes.push({ id: transaction.Destination, group: 'Invoke', color: '#FF1A8B', hash: transaction.hash, size: 1 })
-            this.links.push({ source: transaction.Account, target: transaction.Destination, group: 'Invoke', hash: transaction.hash })
-            // console.log('graphInvoke xxx', { source: transaction.Account, target: transaction.Destination, group: 'Invoke' })
-            if (this.accounts[transaction.Account] === undefined) {
-                this.accounts[transaction.Account] = {
-                    account: transaction.Account
-                }
-            }
-            if (this.accounts[transaction.Destination] === undefined) {
-                this.accounts[transaction.Destination] = {
-                    account: transaction.Destination
-                }
-            }
-
-            let Other
-            let meta = transaction.metaData || transaction.meta
-            if (meta.HookExecutions === undefined) { return }
-            for (let index = 0; index < meta.HookExecutions.length; index++) {
-                const nodes = meta.HookExecutions[index]
-                // if (nodes.HookExecution.HookAccount !== 'AccountRoot') { continue }
-                Other = nodes.HookExecution.HookAccount
-                if (Other === undefined) { continue }
-                if (Other === transaction.Account) { continue }
-                if (Other === transaction.Destination) { continue }
-                this.nodes.push({ id: Other, group: 'Invoke', color: '#FF1A8B', hash: transaction.hash, size: 1 })
-                this.links.push({ source: Other, target: transaction.Account, group: 'Invoke', hash: transaction.hash })
-                console.log('graphInvoke Other', Other)
-                if (this.accounts[Other] === undefined) {
-                    this.accounts[Other] = {
-                        account: Other
-                    }
-                }
-            }
-            
-            
-        },
-        graphURITokenMint(transaction) {
-            // console.log('graphURITokenMint', transaction)
-            this.nodes.push({ id: transaction.Account, group: 'NFT', color: '#FFFF00', hash: transaction.hash, size: 1 })
-
-            let Other
-            let meta = transaction.metaData || transaction.meta
-            for (let index = 0; index < meta.AffectedNodes.length; index++) {
-                const nodes = meta.AffectedNodes[index]
-                if (nodes.DeletedNode === undefined) { continue }
-                if (nodes.LedgerEntryType !== 'AccountRoot') { continue }
-                Other = nodes.FinalFields.RegularKey
-                if (Other === undefined) { continue }
-                if (Other === transaction.Account) { continue }
-                this.nodes.push({ id: Other, group: 'Invoke', color: '#FFA500', hash: transaction.hash, size: 1 })
-                this.links.push({ source: Other, target: transaction.Account, group: 'Invoke', hash: transaction.hash })
-                if (this.accounts[Other] === undefined) {
-                    this.accounts[Other] = {
-                        account: Other
-                    }
-                }
-            }
-            if (this.accounts[transaction.Account] === undefined) {
-                this.accounts[transaction.Account] = {
-                    account: transaction.Account
-                }
-            }
-            
-        },
-        graphURITokenBuy(transaction) {
-            // console.log('graphURITokenBuy', transaction)
-
-            let Buyer
-            this.nodes.push({ id: transaction.Account, group: 'NFT', color: '#FFFF00', hash: transaction.hash, size: 1 })
-            let meta = transaction.metaData || transaction.meta
-            for (let index = 0; index < meta.AffectedNodes.length; index++) {
-                const nodes = meta.AffectedNodes[index]
-                if (nodes.LedgerEntryType !== 'URIToken') { continue }
-                Buyer = nodes.FinalFields.Issuer
-                this.nodes.push({ id: Buyer, group: 'NFT', color: '#FFFF00', hash: transaction.hash, size: 1 })
-                this.links.push({ source: Buyer, target: transaction.Account, group: 'NFT', hash: transaction.hash })
-            }
-            if (this.accounts[transaction.Account] === undefined) {
-                this.accounts[transaction.Account] = {
-                    account: transaction.Account
-                }
-            }
-            if (this.accounts[Buyer] === undefined) {
-                this.accounts[Buyer] = {
-                    account: Buyer
-                }
-            }
-        },
-        graphNFTokenAcceptOffer(transaction) {
-            // console.log('graphNFTokenAcceptOffer', transaction)
-
-            let Buyer
-            // console.log('graphNFTokenAcceptOffer', transaction)
-            let meta = transaction.metaData || transaction.meta
-            for (let index = 0; index < meta.AffectedNodes.length; index++) {
-                const nodes = meta.AffectedNodes[index]
-                if (nodes.DeletedNode === undefined) { continue }
-                if (nodes.LedgerEntryType !== 'NFTokenOffer') { continue }
-                Buyer = nodes.FinalFields.Owner
-                this.nodes.push({ id: Buyer, group: 'NFT', color: '#FFFF00', hash: transaction.hash, size: 1 })
-            }
-            if (this.accounts[transaction.Account] === undefined) {
-                this.accounts[transaction.Account] = {
-                    account: transaction.Account
-                }
-            }
-            if (this.accounts[Buyer] === undefined) {
-                this.accounts[Buyer] = {
-                    account: Buyer
-                }
-            }
-
-            if (Buyer !== undefined) {
-                this.nodes.push({ id: transaction.Account, group: 'NFT', color: '#FFFF00', hash: transaction.hash, size: 1 })
-                this.links.push({ source: transaction.Account, target: Buyer, group: 'NFT', hash: transaction.hash })
-            }
-        },
-        graphNFTokenCreateOffer(transaction) {
-            // console.log('graphNFTokenCreateOffer', transaction)
-
-            if (this.accounts[transaction.Account] === undefined) {
-                this.accounts[transaction.Account] = {
-                    account: transaction.Account
-                }
-            }
-            if (this.accounts[transaction.Destination] === undefined) {
-                this.accounts[transaction.Destination] = {
-                    account: transaction.Destination
-                }
-            }
-
-            this.nodes.push({ id: transaction.Destination, group: 'NFT', color: '#FFFF00', hash: transaction.hash, size: 1 })
-            this.nodes.push({ id: transaction.Account, group: 'NFT', color: '#FFFF00', hash: transaction.hash, size: 1 })
-            this.links.push({ source: transaction.Account, target: transaction.Destination, group: 'NFT', hash: transaction.hash })
-        },
+        
+        
+        
         scaleValue(value) {
             if (value < 1) { return 1 }
             if (value < 10) { return 2 }
