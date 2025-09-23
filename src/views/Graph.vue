@@ -259,22 +259,39 @@ export default {
                 if (asset2 === 'XRP' && value.AMM.pool === 'rBNUvT7EpjKFdihyj5X5jmAsscwqtV7Po7') {
                     console.log('size', size, value.AMM.liquidity.amount2 / 1_000_000, value.AMM.liquidity)
                 }
-
+                let color = '#FF1A8B'
+                if (size <= 1) {
+                    color = '#FF1A8B'
+                }
+                else if (size <= 10) {
+                    color = '#974CFF'
+                }
+                else if (size <= 50) {
+                    color = '#ffa500'
+                }
+                else if (size <= 100) {
+                    color = '#00E56a'
+                }
+                else if (size <= 500) {
+                    color = '#1c9ce7'
+                }
+                //00FFFF
+                
                 if (!this.pairs.includes(pair1) && (asset1 === 'XRP' || asset2=== 'XRP' )) {
                     this.pairs.push(pair1)
-                    allNodes.push({ id: pair1, group: value.asset1.issuer, color: pair1.split(':')[0] === 'XRP' ? '#FF1A8B' :'#974CFF', pool: value.AMM.pool, size })
+                    allNodes.push({ id: pair1, group: value.asset1.issuer, color: pair1.split(':')[0] === 'XRP' ? '#FF1A8B' :color, pool: value.AMM.pool, size })
                 }
                 else if (!this.pairs.includes(pair2) && (asset1 === 'XRP' || asset2=== 'XRP' )) {
                     this.pairs.push(pair2)
-                    allNodes.push({ id: pair2, group: value.asset2.issuer, color: pair2.split(':')[0] === 'XRP' ? '#FF1A8B' :'#974CFF', pool: value.AMM.pool, size })
+                    allNodes.push({ id: pair2, group: value.asset2.issuer, color: pair2.split(':')[0] === 'XRP' ? '#FF1A8B' :color, pool: value.AMM.pool, size })
                 }
                 else if (!this.pairs.includes(pair1) && (asset1 === 'XRP' && asset2=== 'XRP' )) {
                     this.pairs.push(pair1)
-                    allNodes.push({ id: pair1, group: value.asset1.issuer, color: pair1.split(':')[0] === 'XRP' ? '#FF1A8B' :'#974CFF', pool: value.AMM.pool, size })
+                    allNodes.push({ id: pair1, group: value.asset1.issuer, color: pair1.split(':')[0] === 'XRP' ? '#FF1A8B' :color, pool: value.AMM.pool, size })
                 }
                 else if (!this.pairs.includes(pair2) && (asset1 !== 'XRP' && asset2=== 'XRP' )) {
                     this.pairs.push(pair2)
-                    allNodes.push({ id: pair2, group: value.asset2.issuer, color: pair2.split(':')[0] === 'XRP' ? '#FF1A8B' :'#974CFF', pool: value.AMM.pool, size })
+                    allNodes.push({ id: pair2, group: value.asset2.issuer, color: pair2.split(':')[0] === 'XRP' ? '#FF1A8B' :color, pool: value.AMM.pool, size })
                 }
 
                 if (pair1.split(':')[0] === 'XRP') {
