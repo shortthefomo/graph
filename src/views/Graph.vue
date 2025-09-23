@@ -185,7 +185,7 @@ export default {
                 .nodeLabel('id')
                 .nodeVal('size')
                 .enableNodeDrag(false)
-                .onNodeClick(node => window.open(`https://threexrp.dev//liquidity?asset=${node.asset}&issuer=${node.issuer}`, '_blank'))
+                .onNodeClick(node => window.open(`https://threexrp.dev/liquidity?asset=${node.asset}&issuer=${node.issuer}`, '_blank'))
             
             this.graph.postProcessingComposer().addPass(bloomPass)
         },
