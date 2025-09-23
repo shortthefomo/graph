@@ -61,7 +61,7 @@
                 <button type="button" class="btn btn-primary" v-on:click="handleFetch" :disabled="ledger === undefined || loading">{{ loading ? 'Rendering':'Render'}}</button>
             </div-->
             
-            <div class="row text-light">
+            <!-- div class="row text-light">
                 <p><i class="bi bi-circle-fill" style="color: #ffa500;"></i> Bridge</p>
             </div>
             <div v-if="network === 'xrpl'" class="row text-light">
@@ -94,14 +94,13 @@
                 <p><i class="bi bi-circle-fill" style="color: #FFFF00;"></i> URIToken, Remit</p>
             </div>
             <div v-if="network === 'xahau'" class="row text-light">
-                <!-- <p><i class="bi bi-circle-fill" style="color: #FFA500;"></i> Invoke</p> -->
                 <p><i class="bi bi-circle-fill" style="color: #FF1A8B;"></i> Invoke</p>
-            </div>
+            </div -->
         </div>
     </div>
 
     
-    <div class="row"><div class="col text-center"><h1 v-if="rendered_label === undefined">{{ ledger }}</h1> <h1 v-if="rendered_label !== undefined">{{ rendered_label }}</h1><small class="text-white">accounts renderered: {{ Object.keys(this.accounts).length }}</small> <small class="text-white">ledgers: {{ ledgers }}</small></div></div>
+    <div class="row"><div class="col text-center"><small class="text-white">nodes: {{ nodes.length }}</small> <small class="text-white">links: {{ links.length }}</small></div></div>
     <div id="3d-graph"></div>
 </template>
 
@@ -153,12 +152,11 @@ export default {
             graph: undefined,
             accounts: {},
             loaded: false,
+            pairs: [],
             nodes: [],
             links: [],
             ledgers: 0,
-            pause: false,
             loading: false,
-            pausedRefill: [],
             time: undefined
         }
     },
@@ -167,8 +165,8 @@ export default {
     
     async mounted() {
         console.log('loading...')
+        
         this.graphAMMs()
-        this.init()
     },
     methods: {
         async init() {
@@ -187,7 +185,7 @@ export default {
                 .nodeLabel('id')
                 .nodeVal('size')
                 .enableNodeDrag(false)
-                .onNodeClick(node => window.open((this.network === 'xrpl') ? `https://livenet.xrpl.org/transactions/${node.hash}`:`https://xahau.xrpl.org/transactions/${node.hash}`, '_blank'))
+                .onNodeClick(node => window.open((this.network === 'xrpl') ? `https://xrpscan.com/account/${node.pool}`:`https://xahscan.com/account/${node.pool}`, '_blank'))
             
             this.graph.postProcessingComposer().addPass(bloomPass)
         },
@@ -203,202 +201,154 @@ export default {
                 links: this.links
             })
         },
-        handleChangeInteraction() {
-            console.log('handleChangeInteraction', !this.interaction)
-            this.graph.enablePointerInteraction(!this.interaction)
-            if (!this.interaction) {
-                this.graph.onNodeClick(node => window.open((this.network === 'xrpl') ? `https://livenet.xrpl.org/accounts/${node.id}`:`https://xahau.xrpl.org/accounts/${node.id}`, '_blank'))
-            }
-            else {
-                this.graph.onNodeClick()
-            }
-        },
         handleSucess() {
             this.success = !this.success
         },
         handleChangDimentions() {
             (!this.dimentions) ? this.graph.numDimensions(3) : this.graph.numDimensions(2)
         },
-        
-        async handleFetch() {
-            this.rendered_label = undefined
-            this.loading = true
-            this.nodes = []
-            this.links = []
-            this.graph.graphData({
-                nodes: this.nodes,
-                links: this.links
+        async pause(milliseconds = 1000) {
+            return new Promise(resolve => {
+                // console.log('pausing....')
+                setTimeout(resolve, milliseconds)
             })
-            
-            this.loading = false
         },
-
         async graphAMMs() {
             console.log('graphAMMs')
+            this.loading = true
             const data = await this.axios.get('https://liquidity.panicbot.app/api/v1/liquidity').then(response => response.data)
             
-            console.log('AMM data loaded')
+            // this.nodes.push({ id: 'XRP', group: 'XRP', color:'#FF1A8B', hash: 'XRP', size: 5 })
+            
+            console.log('AMM data parsing...')
+            
+
+            const allNodes = []
+            const allLinks = []
             for (const [key, value] of Object.entries(data)) {
+
                 if (key === 'time') {
                     console.log('updating time', value)
                     this.time = value
                     continue
                 }
-                value.key = key
-                console.log(value.asset1.currency, value.asset2.currency, value.asset1.issuer, value.asset2.issuer)
-                this.nodes.push({ id: value.asset2.issuer, group: 'AMM', color: '#1c9ce7', hash: value.asset2.currency, size: 1 })
-                this.nodes.push({ id: value.asset1.issuer, group: 'AMM', color: '#1c9ce7', hash: value.asset1.currency, size: 1 })
-                this.links.push({ source: value.asset1.issuer, target: value.asset2.issuer, group: 'AMM', hash: value.asset1.currency })
+                if (value.AMM.liquidity === null) {
+                    continue
+                }
 
-                // if (this.base_asset === value.asset2.currency) {
-                //     if (!this.issuers.includes(value.asset2.issuer)) {
-                //         this.issuers.push(value.asset2.issuer)
-                //     }
-                // }
-                // else if (this.base_asset === value.asset1.currency) {
-                //     if (!this.issuers.includes(value.asset1.issuer)) {
-                //         this.issuers.push(value.asset1.issuer)
-                //     }
-                // }
+                const asset1 = this.currencyHexToUTF8(value.asset1.currency)
+                const asset2 = this.currencyHexToUTF8(value.asset2.currency)
+
+                const pair1 = (asset1 === 'XRP') ? asset1 + ':' + value.asset2.issuer : asset1 + ':' + value.asset1.issuer
+                const pair2 = (asset2 === 'XRP') ? asset2 + ':' + value.asset1.issuer : asset2 + ':' + value.asset2.issuer
+                let size = 1
+                    
+
+                if (asset1 === 'XRP'){
+                    size = this.scaleValue(value.AMM.liquidity.amount1 / 1_000_000)
+                    // console.log('size', size, value.AMM.liquidity.amount1 / 1_000_000, value.AMM.liquidity)
+                } 
+                if (asset2 === 'XRP'){
+                    size = this.scaleValue(value.AMM.liquidity.amount2 / 1_000_000)
+                }
+
+                if (asset1 === 'XRP' && value.AMM.pool === 'rBNUvT7EpjKFdihyj5X5jmAsscwqtV7Po7') {
+                    console.log('size', size, value.AMM.liquidity.amount1 / 1_000_000, value.AMM.liquidity)
+                }
+
+                if (asset2 === 'XRP' && value.AMM.pool === 'rBNUvT7EpjKFdihyj5X5jmAsscwqtV7Po7') {
+                    console.log('size', size, value.AMM.liquidity.amount2 / 1_000_000, value.AMM.liquidity)
+                }
+
+                if (!this.pairs.includes(pair1) && (asset1 === 'XRP' || asset2=== 'XRP' )) {
+                    this.pairs.push(pair1)
+                    allNodes.push({ id: pair1, group: value.asset1.issuer, color: pair1.split(':')[0] === 'XRP' ? '#FF1A8B' :'#974CFF', pool: value.AMM.pool, size })
+                }
+                else if (!this.pairs.includes(pair2) && (asset1 === 'XRP' || asset2=== 'XRP' )) {
+                    this.pairs.push(pair2)
+                    allNodes.push({ id: pair2, group: value.asset2.issuer, color: pair2.split(':')[0] === 'XRP' ? '#FF1A8B' :'#974CFF', pool: value.AMM.pool, size })
+                }
+                else if (!this.pairs.includes(pair1) && (asset1 === 'XRP' && asset2=== 'XRP' )) {
+                    this.pairs.push(pair1)
+                    allNodes.push({ id: pair1, group: value.asset1.issuer, color: pair1.split(':')[0] === 'XRP' ? '#FF1A8B' :'#974CFF', pool: value.AMM.pool, size })
+                }
+                else if (!this.pairs.includes(pair2) && (asset1 !== 'XRP' && asset2=== 'XRP' )) {
+                    this.pairs.push(pair2)
+                    allNodes.push({ id: pair2, group: value.asset2.issuer, color: pair2.split(':')[0] === 'XRP' ? '#FF1A8B' :'#974CFF', pool: value.AMM.pool, size })
+                }
+
+                if (pair1.split(':')[0] === 'XRP') {
+                    allLinks.push({ source: pair1, target: pair2, group: value.asset1.issuer, pool: value.AMM.pool })
+                }
+                else {
+                    allLinks.push({ source: pair2, target: pair1, group: value.asset1.issuer, pool: value.AMM.pool })
+                }
             }
+
+            console.log('filtering nodes and links...')
+            //now filter the nodes with to those with more than 2 links
+            const nodeLinkCounts = {}
+            allLinks.forEach(link => {
+                nodeLinkCounts[link.source] = (nodeLinkCounts[link.source] || 0) + 1
+                nodeLinkCounts[link.target] = (nodeLinkCounts[link.target] || 0) + 1
+            })
+            console.log('nodeLinkCounts', nodeLinkCounts)
+            
+            this.nodes = allNodes.filter(node => nodeLinkCounts[node.id] >= 2)
+            console.log('nodes', this.nodes)
+            const filteredNodeIds = new Set(this.nodes.map(node => node.id))
+            this.links = allLinks.filter(link => 
+                filteredNodeIds.has(link.source) && filteredNodeIds.has(link.target)
+            )
+            console.log('links', this.links)
+            this.init()
+
+            console.log('AMM data loaded')
+            
+            this.loading = false
+            
         },
         
         
         
         scaleValue(value) {
-            if (value < 1) { return 1 }
-            if (value < 10) { return 2 }
-            if (value < 100) { return 5 }
-            if (value < 1_000) { return 12 }
-            if (value < 10_000) { return 40 }
-            if (value < 100_000) { return 60 }
-            if (value < 1_000_000) { return 70 }
+            
+            if (value < 7_000) { return 0.1 }
+            if (value < 10_000) { return 2 }
+            if (value < 20_000) { return 3 }
+            if (value < 30_000) { return 4 }
+            if (value < 40_000) { return 5 }
+            if (value < 50_000) { return 6 }
+            if (value < 60_000) { return 7 }
+            if (value < 70_000) { return 8 }
+            if (value < 80_000) { return 9 }
+            if (value < 90_000) { return 10 }
+            if (value < 100_000) { return 11 }
+            if (value < 200_000) { return 12 }
+            if (value < 300_000) { return 13 }
+            if (value < 400_000) { return 14 }
+            if (value < 500_000) { return 15 }
+            if (value < 600_000) { return 16 }
+            if (value < 700_000) { return 17 }
+            if (value < 800_000) { return 18 }
+            if (value < 900_000) { return 19 }
+
+            if (value < 1_000_000) { return 40 }
             if (value < 10_000_000) { return 80 }
             if (value < 100_000_000) { return 100 }
-            if (value < 1_000_000_000) { return 500 }
+            if (value < 1_000_000_000) { return 200 }
         },
-        graphData(data, transaction, type = undefined) {
-            for (let index = 0; index < data.accountBalanceChanges.length; index++) {
-                let value = 0
-                const element = data.accountBalanceChanges[index]
-
-                //size elements
-                
-                element.balances.forEach(bal => {
-                    if (bal.currency === 'XRP') {
-                        value = Math.abs(Number(bal.value))
-                    }
-                })
-
-                if (this.ignored.includes(element.account)) { continue }
-                
-                const group = type !== undefined ? type: element.isAMM ? 'AMM': element.isOffer ? 'DEX' : element.isDirect? 'DIRECT' : 'RIPPLING'
-                // bit complicated here as there is a bug in .isOffer
-                let color
-                if (type === 'DEX') {
-                    color = element.isAMM ? '#FF1A8B': '#00E56a'
-                }
-                else {
-                    color = element.isAMM ? '#FF1A8B': element.isOffer ? '#00E56a' : element.isDirect? '#974CFF' : '#FFFFFF'
-                }
-                // teleport bridge
-                if (element.account === 'rTeLeproT3BVgjWoYrDYpKbBLXPaVMkge') {
-                    color = '#ffa500'
-                }
-                if (element.account === 'rEVRTELEpb16FQSGgK8GRJGy9ChviquddK') {
-                    color = '#ffa500'
-                }
-                // axelar bridge
-                if (element.account === 'rfmS3zqrQrka8wVyhXifEeyTwe8AMz2Yhw') {
-                    color = '#ffa500'
-                }
-                
-                // corium bridge
-                if (element.account === 'rxXXXeMX8Gy5YvibvGLnQJ1XKKD7UswM1') {
-                    color = '#ffa500'
-                }
-
-                if (this.accounts[element.account] === undefined) {
-                    this.accounts[element.account] = {
-                        account: element.account
-                    }
-
-                    this.nodes.push({ id: element.account, group: 'Payment', color, hash: transaction.hash, size: this.scaleValue(value) })
-                }
-                else {
-                    // update colors to the latest other wise.
-                    for (let index = 0; index < this.nodes.length; index++) {
-                        const node = this.nodes[index]
-                        if (node.id !== element.account) { continue }
-                        if (node.color !== color && node.group !== 'AMM') {
-                            // console.log('color changed', element.account, node.color, color)
-                            node.color = color
-                        }
-                        if (value !== 0 && this.nodes[index].size !== undefined) {
-                            this.nodes[index].size = this.scaleValue(value)
-                        }
-                        if (this.nodes[index].size !== undefined) {
-                            this.nodes[index].size = this.scaleValue(value)
-                        }
-                        
-                    }
-                }
-
-                if (data.sourceAccount !== element.account) {
-                    this.links.push({ source: data.sourceAccount, target: element.account, group: 'Payment', hash: transaction.hash })
-                }
-            }
-        },
-        async accountTX(wallet) {
-            this.client = this.$store.getters.getClient(this.network)
-            console.log(await this.client.send({'command': 'server_info'}))
-            let account = await this.client.send({
-                'command': 'account_tx',
-                'account': wallet,
-                'ledger_index_min': -1,
-                'ledger_index_max': -1,
-                'binary': false,
-                'limit': 1000,
-                'forward': false
-            })
-            let marker = account.marker
-            console.log(account.transactions.length)
-            this.graphAccountTX(account)
-
-            console.log('marker', marker)
-            let counter = 0
-            while (marker !== undefined) {
-                account = await this.client.send({
-                    'command': 'account_tx',
-                    'account': wallet,
-                    'ledger_index_min': -1,
-                    'ledger_index_max': -1,
-                    'binary': false,
-                    'limit': 1000,
-                    'forward': false,
-                    'marker': marker
-                })
-                marker = account.marker
-                console.log(account.transactions.length)
-
-                this.graphAccountTX(account)
-                counter++
-                if (counter > 5) { break }
-                console.log('counter', counter)
-            }
-            
-        },
-        graphAccountTX(account) {
-            account.transactions.forEach(data => {
-                const transaction = {...data.tx}
-                transaction.metaData = {...data.meta}
-                if (transaction.TransactionType === 'Payment') {
-                    this.graphPayment(transaction)
-                }
-                if (transaction.TransactionType === 'OfferCreate') {
-                    this.graphOfferCreate(transaction)
-                }
-            })
+        scaleLinks(value) {
+            if (value < 1) { return 1 }
+            if (value < 2) { return 2 }
+            if (value < 4) { return 5 }
+            if (value < 8) { return 12 }
+            if (value < 16) { return 40 }
+            if (value < 32) { return 60 }
+            if (value < 64) { return 70 }
+            if (value < 128) { return 80 }
+            if (value < 256) { return 100 }
+            if (value < 512) { return 500 }
         },
         currencyHexToUTF8(code) {
             if (code.length === 3)
