@@ -185,7 +185,7 @@ export default {
                 .nodeLabel('id')
                 .nodeVal('size')
                 .enableNodeDrag(false)
-                .onNodeClick(node => window.open((this.network === 'xrpl') ? `https://xrpscan.com/account/${node.pool}`:`https://xahscan.com/account/${node.pool}`, '_blank'))
+                .onNodeClick(node => window.open(`https://threexrp.dev//liquidity?asset=${node.asset}&issuer=${node.issuer}`, '_blank'))
             
             this.graph.postProcessingComposer().addPass(bloomPass)
         },
@@ -279,26 +279,26 @@ export default {
                 
                 if (!this.pairs.includes(pair1) && (asset1 === 'XRP' || asset2=== 'XRP' )) {
                     this.pairs.push(pair1)
-                    allNodes.push({ id: pair1, group: value.asset1.issuer, color: pair1.split(':')[0] === 'XRP' ? '#FF1A8B' :color, pool: value.AMM.pool, size })
+                    allNodes.push({ id: pair1, asset: value.asset1.currency, issuer: value.asset1.issuer, color: pair1.split(':')[0] === 'XRP' ? '#FF1A8B' :color, pool: value.AMM.pool, size })
                 }
                 else if (!this.pairs.includes(pair2) && (asset1 === 'XRP' || asset2=== 'XRP' )) {
                     this.pairs.push(pair2)
-                    allNodes.push({ id: pair2, group: value.asset2.issuer, color: pair2.split(':')[0] === 'XRP' ? '#FF1A8B' :color, pool: value.AMM.pool, size })
+                    allNodes.push({ id: pair2, asset: value.asset2.currency, issuer: value.asset2.issuer, color: pair2.split(':')[0] === 'XRP' ? '#FF1A8B' :color, pool: value.AMM.pool, size })
                 }
                 else if (!this.pairs.includes(pair1) && (asset1 === 'XRP' && asset2=== 'XRP' )) {
                     this.pairs.push(pair1)
-                    allNodes.push({ id: pair1, group: value.asset1.issuer, color: pair1.split(':')[0] === 'XRP' ? '#FF1A8B' :color, pool: value.AMM.pool, size })
+                    allNodes.push({ id: pair1, asset: value.asset1.currency, issuer: value.asset1.issuer, color: pair1.split(':')[0] === 'XRP' ? '#FF1A8B' :color, pool: value.AMM.pool, size })
                 }
                 else if (!this.pairs.includes(pair2) && (asset1 !== 'XRP' && asset2=== 'XRP' )) {
                     this.pairs.push(pair2)
-                    allNodes.push({ id: pair2, group: value.asset2.issuer, color: pair2.split(':')[0] === 'XRP' ? '#FF1A8B' :color, pool: value.AMM.pool, size })
+                    allNodes.push({ id: pair2, asset: value.asset2.currency, issuer: value.asset2.issuer, color: pair2.split(':')[0] === 'XRP' ? '#FF1A8B' :color, pool: value.AMM.pool, size })
                 }
 
                 if (pair1.split(':')[0] === 'XRP') {
-                    allLinks.push({ source: pair1, target: pair2, group: value.asset1.issuer, pool: value.AMM.pool })
+                    allLinks.push({ source: pair1, target: pair2, pool: value.AMM.pool })
                 }
                 else {
-                    allLinks.push({ source: pair2, target: pair1, group: value.asset1.issuer, pool: value.AMM.pool })
+                    allLinks.push({ source: pair2, target: pair1, pool: value.AMM.pool })
                 }
             }
 
