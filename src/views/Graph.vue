@@ -100,7 +100,7 @@
     </div>
 
     
-    <div class="row"><div class="col text-center"><small class="text-white">nodes: {{ nodes.length }}</small> <small class="text-white">links: {{ links.length }}</small></div></div>
+    <div class="row"><div class="col text-center"><small class="text-white">AMM pools: {{ nodes.length }}</small> <small class="text-white">links: {{ links.length }}</small></div></div>
     <div id="3d-graph"></div>
 </template>
 
@@ -242,7 +242,6 @@ export default {
                 const pair1 = (asset1 === 'XRP') ? asset1 + ':' + value.asset2.issuer : asset1 + ':' + value.asset1.issuer
                 const pair2 = (asset2 === 'XRP') ? asset2 + ':' + value.asset1.issuer : asset2 + ':' + value.asset2.issuer
                 let size = 1
-                    
 
                 if (asset1 === 'XRP'){
                     size = this.scaleValue(value.AMM.liquidity.amount1 / 1_000_000)
@@ -295,10 +294,10 @@ export default {
                 }
 
                 if (pair1.split(':')[0] === 'XRP') {
-                    allLinks.push({ source: pair1, target: pair2, pool: value.AMM.pool })
+                    allLinks.push({ source: pair1, target: pair2, pool: value.AMM.pool, width: 5 })
                 }
                 else {
-                    allLinks.push({ source: pair2, target: pair1, pool: value.AMM.pool })
+                    allLinks.push({ source: pair2, target: pair1, pool: value.AMM.pool, width: 1 })
                 }
             }
 
@@ -322,8 +321,19 @@ export default {
 
             console.log('AMM data loaded')
             
+
+            /// send TX......
+            const self = this
+            setInterval(() => {
+                console.log('emitting particle')
+
+                for (let index = 0; index < 100; index++) {
+                    const link = allLinks[Math.floor(Math.random() * allLinks.length)]
+                    self.graph.emitParticle(link)
+                }
+                
+            }, 1000)
             this.loading = false
-            
         },
         
         
