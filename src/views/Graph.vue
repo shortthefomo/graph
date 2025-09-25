@@ -165,7 +165,8 @@ export default {
     
     async mounted() {
         console.log('loading...')
-        
+        this.$store.dispatch('clientConnect',  { network: this.network, force: false })
+        await this.connect()
         this.graphAMMs()
     },
     methods: {
