@@ -214,6 +214,9 @@ export default {
                 setTimeout(resolve, milliseconds)
             })
         },
+        listenLedgers() {
+            
+        },
         async fetchLedger(index) {
             console.log('fetching ledger', index)
             let request = {
