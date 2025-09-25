@@ -213,6 +213,21 @@ export default {
                 setTimeout(resolve, milliseconds)
             })
         },
+        async fetchLedger(index) {
+            console.log('fetching ledger', index)
+            let request = {
+                'id': 'xrpl-local',
+                'command': 'ledger',
+                'ledger_index': index,
+                'transactions': true,
+                'expand': true,
+                'owner_funds': true
+            }
+            this.client = this.$store.getters.getClient(this.network)
+            const ledger_result = await this.client.send(request)
+            // console.log('ledger_result', ledger_result)
+            if ('error' in ledger_result) { return }
+        },
         async graphAMMs() {
             console.log('graphAMMs')
             this.loading = true
