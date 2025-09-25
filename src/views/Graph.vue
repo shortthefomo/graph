@@ -107,6 +107,7 @@
 <script>
 import { XrplClient } from 'xrpl-client'
 import ForceGraph3D from '3d-force-graph'
+import pathParser from 'xrpl-tx-path-parser'
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js'
 // import { GlitchPass } from 'three/examples/jsm/postprocessing/GlitchPass.js'
 
