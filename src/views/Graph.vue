@@ -239,6 +239,8 @@ export default {
                 const transactions = ledger_result?.ledger?.transactions
                 for (let i = 0; i < transactions.length; i++) {
                     const transaction = transactions[i]
+                    if (transaction.metaData.TransactionResult !== 'tesSUCCESS') { continue }
+                    transaction.meta  = transaction.metaData
                     console.log('transaction', transaction)
                     const data = pathParser(transaction)
                     console.log('parsed data', data)
