@@ -9,11 +9,11 @@
                         {{ option.label }}
                     </option>
                 </select>
-            </div>
-            <div class="input-group mb-2">
-                <span class="input-group-text">Ledgers</span>
-                <select v-model="range">
-                    <option v-for="(option, index) in ranges" :value="option.value" :key="index">
+            </div -->
+            <!-- div class="input-group mb-2">
+                <span class="input-group-text">graph mode</span>
+                <select v-model="mode" v-on:click="handleChangeMode($event)">
+                    <option v-for="(option, index) in modes" :value="option.value" :key="index">
                         {{ option.label }}
                     </option>
                 </select>
@@ -135,6 +135,15 @@ export default {
             success: true,
             animation: 1200,
             range: 25,
+            mode: null,
+            mode_last: null,
+            modes: [
+                { label: 'standard', value: null },
+                { label: 'radialout', value: 'radialout' },
+                { label: 'radialin', value: 'radialin' },
+                // { label: 'zin', value: 'zin' },
+                // { label: 'zout', value: 'zout' }
+            ],
             ranges: [
                 { label: '10', value: 10 },
                 { label: '25', value: 25 },
@@ -172,6 +181,14 @@ export default {
         this.graphAMMs()
     },
     methods: {
+        handleChangeMode(event) {
+            console.log('changing mode', this.mode)
+
+            if (this.mode_last !== this.mode) {
+                this.mode_last = this.mode
+                this.graph.dagMode(this.mode) 
+            }
+        },
         async init() {
             this.graph = undefined
             this.graph = ForceGraph3D({
@@ -195,6 +212,7 @@ export default {
                 .onNodeClick(node => window.open(`https://threexrp.dev/liquidity?asset=${node.asset}&issuer=${node.issuer}`, '_blank'))
             
             this.graph.postProcessingComposer().addPass(bloomPass)
+            this.graph.dagMode(this.mode)
         },
         handleChangeBloom() {
             if (!this.bloom_show) {
