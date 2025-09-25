@@ -160,7 +160,7 @@ export default {
             ledgers: 0,
             loading: false,
             time: undefined,
-            client: undefined,
+            client: undefined
         }
     },
     computed: {
@@ -188,6 +188,8 @@ export default {
                 .nodeLabel('id')
                 .nodeVal('size')
                 .enableNodeDrag(false)
+                .linkDirectionalParticleColor(() => 'cyan')
+                .linkDirectionalParticleWidth(3)
                 .onNodeClick(node => window.open(`https://threexrp.dev/liquidity?asset=${node.asset}&issuer=${node.issuer}`, '_blank'))
             
             this.graph.postProcessingComposer().addPass(bloomPass)
@@ -218,14 +220,14 @@ export default {
         },
         listenLedgers() {
             const xrpl = new XrplClient(['wss://xrpl1.panicbot.app', 'wss://xrpl2.panicbot.app'])
-
+            const self = this
             xrpl.send({
 				id: 'sequencer-' + name,
 				command: 'subscribe',
 				streams: ['ledger']
 			})
             xrpl.on('ledger', async (event) => {
-                // console.log('ledger transaction', transaction)
+                console.log('ledger close')
                 const request = {
                     'id': 'xrpl-local',
                     'command': 'ledger',
@@ -241,9 +243,37 @@ export default {
                     const transaction = transactions[i]
                     if (transaction.metaData.TransactionResult !== 'tesSUCCESS') { continue }
                     transaction.meta  = transaction.metaData
-                    console.log('transaction', transaction)
-                    const data = pathParser(transaction)
-                    console.log('parsed data', data)
+                    // console.log('transaction', transaction)
+                    try {
+                        const data = pathParser(transaction)
+                        if (data.accountBalanceChanges !== undefined && data.accountBalanceChanges.length > 0) {
+                            for (let index = 0; index < data.accountBalanceChanges.length; index++) {
+                                const change = data.accountBalanceChanges[index]
+                                if (!change.isAMM) { continue }
+                                // console.log('AMM affffected', change)
+                                self.paymentParticle(change)
+                            }
+                        }    
+                    } catch (error) {
+                        //console.log('error parsing path', error)
+                    }
+                }
+            })
+        },
+        paymentParticle(change) {
+            // if (!(change.balances.length >= 2)) { return }
+
+            const asset1 = this.currencyHexToUTF8(change.balances[0].currency)
+            const asset2 = this.currencyHexToUTF8(change.balances[1].currency)
+
+            const pair1 = (asset1 === 'XRP') ? asset1 : asset1 + ':' + change.balances[0].issuer
+            const pair2 = (asset2 === 'XRP') ? asset2 : asset2 + ':' + change.balances[1].issuer
+            const self = this
+            this.links.forEach(link => {
+
+                if ((link.source.id === pair1 && link.target.id === pair2) || (link.source.id === pair2 && link.target.id === pair1)) {
+                    self.graph.emitParticle(link)
+                    console.log('animating particle', link)
                 }
             })
         },
@@ -343,10 +373,10 @@ export default {
                 }
 
                 if (pair1.split(':')[0] === 'XRP') {
-                    allLinks.push({ source: pair1, target: pair2, pool: value.AMM.pool, width: 5 })
+                    allLinks.push({ source: pair1, target: pair2, pool: value.AMM.pool, particleWidth: 5 })
                 }
                 else {
-                    allLinks.push({ source: pair2, target: pair1, pool: value.AMM.pool, width: 1 })
+                    allLinks.push({ source: pair2, target: pair1, pool: value.AMM.pool, particleWidth: 5})
                 }
             }
 
@@ -372,21 +402,18 @@ export default {
             
 
             /// send TX......
-            const self = this
-            setInterval(() => {
-                console.log('emitting particle')
+            // const self = this
+            // setInterval(() => {
+            //     console.log('emitting particle')
 
-                for (let index = 0; index < 100; index++) {
-                    const link = allLinks[Math.floor(Math.random() * allLinks.length)]
-                    self.graph.emitParticle(link)
-                }
+            //     for (let index = 0; index < 100; index++) {
+            //         const link = allLinks[Math.floor(Math.random() * allLinks.length)]
+            //         self.graph.emitParticle(link)
+            //     }
                 
-            }, 1000)
+            // }, 1000)
             this.loading = false
         },
-        
-        
-        
         scaleValue(value) {
             
             if (value < 7_000) { return 0.1 }
