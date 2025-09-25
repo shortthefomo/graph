@@ -168,7 +168,6 @@ export default {
     
     async mounted() {
         console.log('loading...')
-        this.client = new XrplClient(['wss://xrpl1.panicbot.app', 'wss://xrpl2.panicbot.app'])
         this.listenLedgers()
         this.graphAMMs()
     },
@@ -218,13 +217,32 @@ export default {
             })
         },
         listenLedgers() {
-            this.client.send({
+            const xrpl = new XrplClient(['wss://xrpl1.panicbot.app', 'wss://xrpl2.panicbot.app'])
+
+            xrpl.send({
 				id: 'sequencer-' + name,
 				command: 'subscribe',
-				streams: ['transactions']
+				streams: ['ledger']
 			})
-            this.client.on('transaction', async (event) => {
-                console.log('ledger transaction', event)
+            xrpl.on('ledger', async (event) => {
+                // console.log('ledger transaction', transaction)
+                const request = {
+                    'id': 'xrpl-local',
+                    'command': 'ledger',
+                    'ledger_hash': event.ledger_hash,
+                    'ledger_index': 'validated',
+                    'transactions': true,
+                    'expand': true,
+                    'owner_funds': true
+                }
+                const ledger_result = await xrpl.send(request)
+                const transactions = ledger_result?.ledger?.transactions
+                for (let i = 0; i < transactions.length; i++) {
+                    const transaction = transactions[i]
+                    console.log('transaction', transaction)
+                    const data = pathParser(transaction)
+                    console.log('parsed data', data)
+                }
             })
         },
         async fetchLedger(index) {
