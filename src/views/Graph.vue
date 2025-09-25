@@ -105,6 +105,7 @@
 </template>
 
 <script>
+import { XrplClient } from 'xrpl-client'
 import ForceGraph3D from '3d-force-graph'
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js'
 // import { GlitchPass } from 'three/examples/jsm/postprocessing/GlitchPass.js'
@@ -157,7 +158,8 @@ export default {
             links: [],
             ledgers: 0,
             loading: false,
-            time: undefined
+            time: undefined,
+            client: undefined,
         }
     },
     computed: {
@@ -165,8 +167,8 @@ export default {
     
     async mounted() {
         console.log('loading...')
-        this.$store.dispatch('clientConnect',  { network: this.network, force: false })
-        await this.connect()
+        this.client = new XrplClient(['wss://xrpl1.panicbot.app', 'wss://xrpl2.panicbot.app'])
+        this.listenLedgers()
         this.graphAMMs()
     },
     methods: {
@@ -215,7 +217,14 @@ export default {
             })
         },
         listenLedgers() {
-            
+            this.client.send({
+				id: 'sequencer-' + name,
+				command: 'subscribe',
+				streams: ['transactions']
+			})
+            this.client.on('transaction', async (event) => {
+                console.log('ledger transaction', event)
+            })
         },
         async fetchLedger(index) {
             console.log('fetching ledger', index)
