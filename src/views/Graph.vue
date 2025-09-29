@@ -21,7 +21,7 @@
                             <span class="text-light" v-if="item.ledger !== undefined">----- leder: {{ item.ledger }}</span>
                             <div  class="tx-group p-1" v-if="item.ledger === undefined">
                                 <div v-for="tx in item.txs">
-                                    <span class="amount" :style="'color: ' + tx.color">{{tx.amount}}</span> <span class="currency" :style="'color: ' + tx.text_color">{{tx.currency}}</span>
+                                    <a :href="tx.link" target="_blank"><span class="amount" :style="'color: ' + tx.color">{{tx.amount}}</span> <span class="currency" :style="'color: ' + tx.text_color">{{tx.currency}}</span></a>
                                 </div>
                             </div>
                         </li>
@@ -188,7 +188,8 @@ export default {
                     currency: this.currencyHexToUTF8(balance.currency),
                     amount: this.numeralFormat(balance.value, '0,0[.]0000'),
                     color,
-                    text_color: (balance.currency === 'XRP') ? '#00e56a' : '#FFFFFF'
+                    text_color: (balance.currency === 'XRP') ? '#00e56a' : '#FFFFFF',
+                    link: `https://threexrp.dev/liquidity?asset=${balance.currency}&issuer=${balance.issuer}`
                 })    
             })
             this.amm.unshift({
@@ -310,7 +311,6 @@ export default {
 
                 if (asset1 === 'XRP'){
                     size = this.scaleValue(value.AMM.liquidity.amount1 / 1_000_000)
-                    // console.log('size', size, value.AMM.liquidity.amount1 / 1_000_000, value.AMM.liquidity)
                 } 
                 if (asset2 === 'XRP'){
                     size = this.scaleValue(value.AMM.liquidity.amount2 / 1_000_000)
@@ -339,7 +339,7 @@ export default {
                 else if (size <= 500) {
                     color = '#1c9ce7'
                 }
-                //00FFFF
+                //00FFFF 
                 
                 if (!this.pairs.includes(pair1) && (asset1 === 'XRP' || asset2=== 'XRP' )) {
                     this.pairs.push(pair1)
@@ -449,6 +449,10 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+a {
+    text-decoration: none;
+}
+
 .tx-group {
     margin-bottom: 0.25rem;
     background-color: rgba(255, 255, 255, 0.1);
