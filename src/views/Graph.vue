@@ -103,7 +103,7 @@ export default {
     async mounted() {
         console.log('loading...')
         this.listenLedgers()
-        // this.graphAMMs()
+        this.graphAMMs()
     },
     methods: {
         handleChangeMode(event) {
