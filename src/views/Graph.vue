@@ -1,107 +1,34 @@
 <template>
-    
     <div class="row">
         <div class="col ms-5 mt-5">
-            <!-- div class="input-group mb-2">
-                <span class="input-group-text">Network</span>
-                <select v-model="network" v-on:change="handleChangeNetwork($event)">
-                    <option v-for="(option, index) in networks" :value="option.value" :key="index">
-                        {{ option.label }}
-                    </option>
-                </select>
-            </div -->
-            <!-- div class="input-group mb-2">
-                <span class="input-group-text">graph mode</span>
-                <select v-model="mode" v-on:click="handleChangeMode($event)">
-                    <option v-for="(option, index) in modes" :value="option.value" :key="index">
-                        {{ option.label }}
-                    </option>
-                </select>
-            </div -->
-            <!-- div class="input-group mb-2">
-                <div class="form-check form-switch">
-                    <input v-model="pause" v-on:click="handleChangePause" class="form-check-input" type="checkbox" role="switch" id="flexBloomPause" checked>
-                    <label class="form-check-label text-white" for="flexBloomPause">Pause Data</label>
-                </div>
-            </div> -->
-            <!-- <div class="col-2">
-                <div class="input-group mb-2 text-light">
-                    
-                    <input v-model="fixed_index" type="email" class="form-control" id="fixedIndex" aria-describedby="fixedIndex">
-                    <label for="fixedIndex" class="form-label ms-2">Ledger Index (optional)</label>
-                </div>
-            </div> -->
-            
-            <!-- div class="input-group mb-2">
-                <div class="form-check form-switch">
-                    <input v-model="success" v-on:click="handleSucess" class="form-check-input" type="checkbox" role="switch" id="flexSucessSwitch" checked>
-                    <label class="form-check-label text-white" for="flexSucessSwitch">tesSUCCESS</label>
-                </div>
-            </div -->
-            <!-- div class="input-group mb-2">
-                <div class="form-check form-switch">
-                    <input v-model="dimentions" v-on:click="handleChangDimentions" class="form-check-input" type="checkbox" role="switch" id="flexDimentionsSwitch" checked>
-                    <label class="form-check-label text-white" for="flexDimentionsSwitch">2D/3D</label>
-                </div>
-            </div -->
             <div class="input-group mb-2">
                 <div class="form-check form-switch">
                     <input v-model="bloom_show" v-on:click="handleChangeBloom" class="form-check-input" type="checkbox" role="switch" id="flexBloomSwitch" checked>
                     <label class="form-check-label text-white" for="flexBloomSwitch">Bloom Pass</label>
                 </div>
             </div>
-            <!-- <div class="input-group mb-2">
-                <div class="form-check form-switch">
-                    <input v-model="interaction" v-on:click="handleChangeInteraction" class="form-check-input" type="checkbox" role="switch" id="flexInteractionmSwitch" checked>
-                    <label class="form-check-label text-white" for="flexInteractionSwitch">Click Nodes (performance degrades)</label>
-                </div>
-            </div> -->
-
-            <!-- div class="input-group mb-5 text-white">
-                <button type="button" class="btn btn-primary" v-on:click="handleFetch" :disabled="ledger === undefined || loading">{{ loading ? 'Rendering':'Render'}}</button>
-            </div-->
-            
-            <!-- div class="row text-light">
-                <p><i class="bi bi-circle-fill" style="color: #ffa500;"></i> Bridge</p>
-            </div>
-            <div v-if="network === 'xrpl'" class="row text-light">
-                <p><i class="bi bi-circle-fill" style="color: #FF1A8B;"></i> AMM</p>
-            </div>
-
-            <div v-if="network === 'xahau'" class="row text-light">
-                <p><i class="bi bi-circle-fill" style="color: #1c37e7;"></i> Import</p>
-            </div>
-            <div class="row text-light">
-                <p><i class="bi bi-circle-fill" style="color: #1c9ce7;"></i> AccountSet</p>
-            </div>
-            
-            <div class="row text-light">
-                <p><i class="bi bi-circle-fill" style="color: #00E56a;"></i> DEX Trade</p>
-            </div>
-            <div class="row text-light">
-                <p><i class="bi bi-circle-fill" style="color: #974CFF;"></i> Direct Payment</p>
-            </div>
-            <div class="row text-light">
-                <p><i class="bi bi-circle-fill" style="color: #FFFFFF;"></i> Rippling Payment</p>
-            </div>
-            <div class="row text-light">
-                <p><i class="bi bi-circle-fill" style="color: #00FFFF;"></i> TrustSet</p>
-            </div>
-            <div v-if="network === 'xrpl'" class="row text-light">
-                <p><i class="bi bi-circle-fill" style="color: #FFFF00;"></i> NFT</p>
-            </div>
-            <div v-if="network === 'xahau'" class="row text-light">
-                <p><i class="bi bi-circle-fill" style="color: #FFFF00;"></i> URIToken, Remit</p>
-            </div>
-            <div v-if="network === 'xahau'" class="row text-light">
-                <p><i class="bi bi-circle-fill" style="color: #FF1A8B;"></i> Invoke</p>
-            </div -->
         </div>
     </div>
-
-    
     <div class="row"><div class="col text-center"><small class="text-white">AMM pools: {{ nodes.length }}</small> <small class="text-white">links: {{ links.length }}</small></div></div>
-    <div id="3d-graph"></div>
+    <div v-if="!loaded" class="spinner-border" role="status"></div>
+    <div id="amm-graph"></div>
+    <section>
+            <div id="data-feed-overlay">
+                <div id="amm-data-feed">
+                    <div class="feed-header">SWAPS</div>
+                    <ul class="interaction">
+                        <li v-for="item in amm">
+                            <span v-if="item.ledger !== undefined">----- leder: {{ item.ledger }}</span>
+                            <div  class="tx-group" v-if="item.ledger === undefined">
+                                <div v-for="tx in item.txs">
+                                    <span class="exchange" :style="'color: ' + tx.color"></span> <span class="info" :style="'color: ' + tx.color">  {{tx.amount}} {{tx.currency}}</span>
+                                </div>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+    </section>
 </template>
 
 <script>
@@ -109,14 +36,11 @@ import { XrplClient } from 'xrpl-client'
 import ForceGraph3D from '3d-force-graph'
 import pathParser from 'xrpl-tx-path-parser'
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js'
-// import { GlitchPass } from 'three/examples/jsm/postprocessing/GlitchPass.js'
 
-
-// const glitchPass = new GlitchPass(64)
 const bloomPass = new UnrealBloomPass()
 bloomPass.strength = 2
 bloomPass.radius = 1
-bloomPass.threshold = 0
+bloomPass.threshold = 0 
 
 export default {
     name: 'Graph',
@@ -163,6 +87,7 @@ export default {
             graph: undefined,
             accounts: {},
             loaded: false,
+            amm: [],
             pairs: [],
             nodes: [],
             links: [],
@@ -199,7 +124,7 @@ export default {
             this.graph.warmupTicks(100)
             this.graph.cooldownTicks(0)
 
-            (document.getElementById('3d-graph'))
+            (document.getElementById('amm-graph'))
                 .backgroundColor('rgba(0,0,0,0)')
                 .graphData({nodes: this.nodes, links: this.links})
                 .nodeLabel('id')
@@ -238,6 +163,23 @@ export default {
                 setTimeout(resolve, milliseconds)
             })
         },
+        insert_feed(data, tx_index) {
+            if (data.length < 1) { return }
+            const txs = []
+            data.forEach(balance => {
+                const color = (balance.currency === 'XRP') ? '#974CFF' : '#FFFFFF'
+                txs.unshift({ 
+                    currency: this.currencyHexToUTF8(balance.currency),
+                    amount: this.numeralFormat(balance.value, '0,0[.]0000'),
+                    color
+                })    
+            })
+            this.amm.unshift({
+                txs
+            })
+            
+            while (this.amm.length > 100){ this.amm.pop() }
+        },
         listenLedgers() {
             const xrpl = new XrplClient(['wss://xrpl1.panicbot.app', 'wss://xrpl2.panicbot.app'])
             const self = this
@@ -258,6 +200,9 @@ export default {
                     'owner_funds': true
                 }
                 const ledger_result = await xrpl.send(request)
+                if ('error' in ledger_result) { return }
+
+
                 const transactions = ledger_result?.ledger?.transactions
                 for (let i = 0; i < transactions.length; i++) {
                     const transaction = transactions[i]
@@ -272,12 +217,16 @@ export default {
                                 if (!change.isAMM) { continue }
                                 // console.log('AMM affffected', change)
                                 self.paymentParticle(change)
+                                self.insert_feed(change.balances, i)
                             }
                         }    
                     } catch (error) {
                         //console.log('error parsing path', error)
                     }
                 }
+                this.amm.unshift({
+                    ledger: ledger_result.ledger_index,
+                })
             })
         },
         paymentParticle(change) {
@@ -419,19 +368,6 @@ export default {
             this.init()
 
             console.log('AMM data loaded')
-            
-
-            /// send TX......
-            // const self = this
-            // setInterval(() => {
-            //     console.log('emitting particle')
-
-            //     for (let index = 0; index < 100; index++) {
-            //         const link = allLinks[Math.floor(Math.random() * allLinks.length)]
-            //         self.graph.emitParticle(link)
-            //     }
-                
-            // }, 1000)
             this.loading = false
         },
         scaleValue(value) {
@@ -496,6 +432,15 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+.tx-group {
+    margin-bottom: 0.25rem;
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+#amm-graph {
+    position: absolute;
+}
+
 .home {
     color: #ffffff;
 }
@@ -534,5 +479,63 @@ h1 {
     font-family: "Minecraft";
     src: url("//db.onlinewebfonts.com/t/6ab539c6fc2b21ff0b149b3d06d7f97c.eot");
     src: url("//db.onlinewebfonts.com/t/6ab539c6fc2b21ff0b149b3d06d7f97c.eot?#iefix") format("embedded-opentype"), url("//db.onlinewebfonts.com/t/6ab539c6fc2b21ff0b149b3d06d7f97c.woff2") format("woff2"), url("//db.onlinewebfonts.com/t/6ab539c6fc2b21ff0b149b3d06d7f97c.woff") format("woff"), url("//db.onlinewebfonts.com/t/6ab539c6fc2b21ff0b149b3d06d7f97c.ttf") format("truetype"), url("//db.onlinewebfonts.com/t/6ab539c6fc2b21ff0b149b3d06d7f97c.svg#Minecraft") format("svg");
+}
+
+#data-feed-overlay.disabled {
+    display: none;
+}
+#data-feed-overlay {
+    position: relative;
+    width: 100%;
+    opacity: 100%;
+    transition:opacity 1s;
+    .form-check-label {
+        right: -1000px;
+        position: absolute;
+    }
+}
+
+ #amm-data-feed {
+    top: auto; 
+    height: 100%;
+    margin-top: 1rem;
+    position: relative;
+    background-color: rgb(255, 255, 255, 0.05);
+    width: 185px;
+    overflow: hidden;
+    .feed-header {
+        font-size: 1.2rem;
+        text-align: center;
+        margin-bottom: 1rem;
+        color: #ffffff;
+    }
+    .feed-header-info {
+        font-size: 0.8rem;
+    }
+    ul {
+        list-style: none;
+        padding: 0;
+    }
+    .interaction {
+        font-size: 0.5rem;
+
+    }
+    padding: 1rem;
+}
+
+#amm-data-feed {
+    text-align: left;
+    float: right;
+}
+
+
+
+
+@media (min-width: 992px) {
+    #amm-data-feed {
+        width: 250px;
+        top: 0;
+        display: block;
+    }
 }
 </style>
