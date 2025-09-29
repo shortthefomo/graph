@@ -18,10 +18,10 @@
                     <div class="feed-header">SWAPS</div>
                     <ul class="interaction">
                         <li v-for="item in amm">
-                            <span v-if="item.ledger !== undefined">----- leder: {{ item.ledger }}</span>
-                            <div  class="tx-group" v-if="item.ledger === undefined">
+                            <span class="text-light" v-if="item.ledger !== undefined">----- leder: {{ item.ledger }}</span>
+                            <div  class="tx-group p-1" v-if="item.ledger === undefined">
                                 <div v-for="tx in item.txs">
-                                    <span class="exchange" :style="'color: ' + tx.color"></span> <span class="info" :style="'color: ' + tx.color">  {{tx.amount}} {{tx.currency}}</span>
+                                    <span class="amount" :style="'color: ' + tx.color">{{tx.amount}}</span> <span class="currency" :style="'color: ' + tx.text_color">{{tx.currency}}</span>
                                 </div>
                             </div>
                         </li>
@@ -103,7 +103,7 @@ export default {
     async mounted() {
         console.log('loading...')
         this.listenLedgers()
-        this.graphAMMs()
+        // this.graphAMMs()
     },
     methods: {
         handleChangeMode(event) {
@@ -167,11 +167,28 @@ export default {
             if (data.length < 1) { return }
             const txs = []
             data.forEach(balance => {
-                const color = (balance.currency === 'XRP') ? '#974CFF' : '#FFFFFF'
+                let color = '#FFFFFF'
+                if (balance.currency === 'XRP') {
+                    if (balance.value > 10) {
+                        color = '#974CFF'
+                    }
+                    if (balance.value > 1000) {
+                        color = '#4d66ff'
+                    }
+                    if (balance.value > 10000) {
+                        color = '#ff931a'
+                    }
+                    if (balance.value > 100000) {
+                        color = '#FF1A8B'
+                    }
+                }
+                
+
                 txs.unshift({ 
                     currency: this.currencyHexToUTF8(balance.currency),
                     amount: this.numeralFormat(balance.value, '0,0[.]0000'),
-                    color
+                    color,
+                    text_color: (balance.currency === 'XRP') ? '#00e56a' : '#FFFFFF'
                 })    
             })
             this.amm.unshift({
