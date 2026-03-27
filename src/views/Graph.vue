@@ -199,7 +199,7 @@ export default {
             while (this.amm.length > 100){ this.amm.pop() }
         },
         listenLedgers() {
-            const xrpl = new XrplClient(['wss://xrpl1.panicbot.app', 'wss://xrpl2.panicbot.app'])
+            const xrpl = new XrplClient(['wss://xrpl1admin.panicbot.app', 'wss://xrpl2admin.panicbot.app'])
             const self = this
             xrpl.send({
 				id: 'sequencer-' + name,
